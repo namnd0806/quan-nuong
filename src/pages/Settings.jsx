@@ -89,11 +89,11 @@ export default function Settings() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-display text-foreground md:text-3xl">Cài đặt</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Thiết lập các thông tin và tham số dùng chung cho toàn bộ hệ thống</p>
+        <h1 className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">Cài đặt</h1>
+        <p className="mt-1 text-sm text-gray-400">Thiết lập các thông tin và tham số dùng chung cho toàn bộ hệ thống</p>
       </div>
 
-      <div className="flex flex-wrap gap-1 border-b border-border">
+      <div className="flex flex-wrap gap-1 border-b border-white/10">
         {TABS.map((t) => {
           const Icon = t.icon
           const active = tab === t.key
@@ -103,12 +103,12 @@ export default function Settings() {
               onClick={() => setTab(t.key)}
               className={cn(
                 'relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors',
-                active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                active ? 'text-blue-400' : 'text-gray-400 hover:text-foreground'
               )}
             >
               <Icon className="h-4 w-4" />
               {t.label}
-              {active && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary" />}
+              {active && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-400" />}
             </button>
           )
         })}
@@ -225,7 +225,7 @@ function CategoriesCard({ ctx }) {
       </div>
 
       <CategoryFormModal open={open} item={editing} saving={saving} onClose={() => !saving && (setOpen(false), setEditing(null))} onSave={save} />
-      <ConfirmDialog open={!!confirmDel} title="Xóa hạng mục?" message={confirmDel ? `Xóa “${confirmDel.name}”?` : ''} loading={deleting} onClose={() => setConfirmDel(null)} onConfirm={del} />
+      <ConfirmDialog open={!!confirmDel} title="Xóa hạng mục?" message={confirmDel ? `Xóa "${confirmDel.name}"?` : ''} loading={deleting} onClose={() => setConfirmDel(null)} onConfirm={del} />
     </Card>
   )
 }
@@ -386,7 +386,7 @@ function PeopleCard({ ctx }) {
       </div>
 
       <MemberFormModal open={open} item={editing} saving={saving} onClose={() => !saving && (setOpen(false), setEditing(null))} onSave={save} />
-      <ConfirmDialog open={!!confirmDel} title="Xóa người phụ trách?" message={confirmDel ? `Xóa “${confirmDel.name}”?` : ''} loading={deleting} onClose={() => setConfirmDel(null)} onConfirm={del} />
+      <ConfirmDialog open={!!confirmDel} title="Xóa người phụ trách?" message={confirmDel ? `Xóa "${confirmDel.name}"?` : ''} loading={deleting} onClose={() => setConfirmDel(null)} onConfirm={del} />
     </Card>
   )
 }

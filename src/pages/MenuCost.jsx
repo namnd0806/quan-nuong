@@ -127,7 +127,7 @@ export default function MenuCost() {
       if (id) await update(id, values)
       else await create(values)
       setAddOpen(false); setEditing(null)
-      toast.success(id ? `Đã cập nhật “${values.name}”.` : `Đã thêm món “${values.name}”.`)
+      toast.success(id ? `Đã cập nhật "${values.name}".` : `Đã thêm món "${values.name}".`)
     } catch (e) { toast.error('Lưu món thất bại: ' + e.message) }
     finally { setSaving(false) }
   }
@@ -137,7 +137,7 @@ export default function MenuCost() {
     try {
       const name = confirmDel?.name
       await remove(confirmDel.id); setConfirmDel(null)
-      toast.success(`Đã xóa “${name}”.`)
+      toast.success(`Đã xóa "${name}".`)
     }
     catch (e) { toast.error('Xóa thất bại: ' + e.message) }
     finally { setDeleting(false) }
@@ -147,10 +147,12 @@ export default function MenuCost() {
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-display text-foreground md:text-3xl">Menu &amp; Cost</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Quản lý menu và tính giá vốn món ăn</p>
+          <h1 className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">Menu &amp; Cost</h1>
+          <p className="mt-1 text-sm text-gray-400">Quản lý menu và tính giá vốn món ăn</p>
         </div>
-        <Button onClick={() => { setEditing(null); setAddOpen(true) }}><Plus className="h-4 w-4" /> Thêm món</Button>
+        <Button onClick={() => { setEditing(null); setAddOpen(true) }} className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30">
+          <Plus className="h-4 w-4" /> Thêm món
+        </Button>
       </div>
 
       {/* Stat cards */}
@@ -159,7 +161,7 @@ export default function MenuCost() {
           const Icon = s.icon
           const t = cardTone[s.tone]
           return (
-            <div key={s.label} className={cn('relative overflow-hidden rounded-2xl border bg-gradient-to-br to-transparent p-5 card-glow', t.grad, t.ring)}>
+            <div key={s.label} className="relative overflow-hidden rounded-2xl border border-white/10 p-5 transition-all hover:border-white/20 hover:shadow-lg hover:shadow-blue-500/10" style={{ background: 'rgba(255,255,255,0.02)' }}>
               <div className="flex items-center gap-4">
                 <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg', t.tile)}>
                   <Icon className="h-6 w-6" />
@@ -170,7 +172,7 @@ export default function MenuCost() {
                 </div>
               </div>
               <div className={cn('mt-3 h-0.5 w-10 rounded-full', t.bar)} />
-              <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+              <div className="mt-2 flex items-center gap-1 text-xs text-gray-400">
                 {s.arrow && <ArrowUpRight className="h-3.5 w-3.5 text-success" />}
                 {s.sub}
               </div>
@@ -182,48 +184,48 @@ export default function MenuCost() {
       {/* Toolbar */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1 lg:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm món ăn, mã món..." className="pl-9" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm món ăn, mã món..." className="rounded-xl border-white/10 bg-white/5 pl-9 focus:border-blue-500/50 focus:bg-white/10" />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={tab} onValueChange={setTab}>
-            <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[170px] rounded-xl border-white/10 bg-white/5"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả danh mục</SelectItem>
               {Object.keys(CAT).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[160px] rounded-xl border-white/10 bg-white/5"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
               <SelectItem value="ok">Đạt mục tiêu</SelectItem>
               <SelectItem value="over">Vượt mục tiêu</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="secondary" onClick={() => setReportOpen(true)}>
+          <Button variant="secondary" onClick={() => setReportOpen(true)} className="gap-2 rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
             <BarChart3 className="h-4 w-4" /> Báo cáo Food Cost
           </Button>
-          <div className="flex overflow-hidden rounded-lg border border-border">
-            <button className="px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent"><List className="h-4 w-4" /></button>
-            <button className="bg-primary px-2.5 py-2 text-primary-foreground"><LayoutGrid className="h-4 w-4" /></button>
+          <div className="flex overflow-hidden rounded-xl border border-white/10">
+            <button className="px-2.5 py-2 text-gray-400 transition-colors hover:bg-white/5"><List className="h-4 w-4" /></button>
+            <button className="bg-blue-600 px-2.5 py-2 text-white"><LayoutGrid className="h-4 w-4" /></button>
           </div>
         </div>
       </div>
 
       {/* Category tabs */}
-      <div className="flex flex-wrap gap-1 rounded-lg bg-secondary/60 p-1">
+      <div className="flex flex-wrap gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all',
-              tab === t.key ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all',
+              tab === t.key ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30' : 'text-gray-400 hover:text-foreground hover:bg-white/5'
             )}
           >
             {t.label}
-            <Badge variant={tab === t.key ? 'default' : 'muted'} className={cn('h-5 min-w-5 justify-center px-1.5', tab === t.key && 'bg-primary-foreground/20 text-primary-foreground')}>
+            <Badge variant={tab === t.key ? 'default' : 'muted'} className={cn('h-5 min-w-5 justify-center px-1.5', tab === t.key ? 'bg-white/20 text-white' : 'bg-white/5 text-gray-400')}>
               {t.count}
             </Badge>
           </button>
@@ -231,11 +233,11 @@ export default function MenuCost() {
       </div>
 
       {/* Table */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-2xl border-white/10" style={{ background: 'rgba(255,255,255,0.02)' }}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[920px] text-sm">
             <thead>
-              <tr className="border-b border-border bg-secondary/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b border-white/10 bg-white/5 text-left text-xs uppercase tracking-wider text-gray-400">
                 <th className="p-4 font-semibold">Món ăn</th>
                 <th className="p-4 font-semibold">Danh mục</th>
                 <th className="p-4 font-semibold">Giá bán</th>
@@ -249,16 +251,16 @@ export default function MenuCost() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} className="p-16 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></td></tr>
+                <tr><td colSpan={9} className="p-16 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-gray-400" /></td></tr>
               ) : error ? (
-                <tr><td colSpan={9} className="p-10 text-center text-sm text-destructive">Không tải được dữ liệu: {error.message}</td></tr>
+                <tr><td colSpan={9} className="p-10 text-center text-sm text-red-400">Không tải được dữ liệu: {error.message}</td></tr>
               ) : filtered.map((m) => {
                 const fc = fcOf(m)
                 const profit = m.sell - m.cost
                 const cat = CAT[m.cat] || { icon: '🍽️', color: 'hsl(215 20% 50%)' }
                 const status = fc > m.target ? 'over' : 'ok'
                 return (
-                  <tr key={m.id} className="border-b border-border/60 transition-colors last:border-0 hover:bg-secondary/30">
+                  <tr key={m.id} className="border-b border-white/10 transition-colors last:border-0 hover:bg-white/5">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <ImageFrame src={m.img} emoji="🍽️" size="h-11 w-11" rounded="rounded-lg" />
@@ -308,7 +310,7 @@ export default function MenuCost() {
       <ConfirmDialog
         open={!!confirmDel}
         title="Xóa món?"
-        message={confirmDel ? `Bạn có chắc muốn xóa “${confirmDel.name}”?` : ''}
+        message={confirmDel ? `Bạn có chắc muốn xóa "${confirmDel.name}"?` : ''}
         loading={deleting}
         onClose={() => setConfirmDel(null)}
         onConfirm={handleDelete}

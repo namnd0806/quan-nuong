@@ -107,7 +107,7 @@ export default function Suppliers() {
       }
       await refetchProducts()
       setAddOpen(false); setEditItem(null)
-      toast.success(id ? `Đã cập nhật “${values.name}”.` : `Đã thêm nhà cung cấp “${values.name}”.`)
+      toast.success(id ? `Đã cập nhật "${values.name}".` : `Đã thêm nhà cung cấp "${values.name}".`)
     } catch (e) {
       toast.error('Lưu nhà cung cấp thất bại: ' + e.message)
     } finally { setSaving(false) }
@@ -118,7 +118,7 @@ export default function Suppliers() {
     try {
       const name = confirmDel?.name
       await remove(confirmDel.id); setConfirmDel(null)
-      toast.success(`Đã xóa “${name}”.`)
+      toast.success(`Đã xóa "${name}".`)
     }
     catch (e) { toast.error('Xóa thất bại: ' + e.message) }
     finally { setDeleting(false) }
@@ -128,10 +128,12 @@ export default function Suppliers() {
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-display text-foreground md:text-3xl">Nhà cung cấp</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Quản lý danh sách nhà cung cấp</p>
+          <h1 className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">Nhà cung cấp</h1>
+          <p className="mt-1 text-sm text-gray-400">Quản lý danh sách nhà cung cấp</p>
         </div>
-        <Button onClick={() => setAddOpen(true)}><Plus className="h-4 w-4" /> Thêm nhà cung cấp</Button>
+        <Button onClick={() => setAddOpen(true)} className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30">
+          <Plus className="h-4 w-4" /> Thêm nhà cung cấp
+        </Button>
       </div>
 
       {/* Stat cards */}
@@ -145,9 +147,10 @@ export default function Suppliers() {
               key={s.key}
               onClick={() => setTab(s.key)}
               className={cn(
-                'relative overflow-hidden rounded-2xl border bg-gradient-to-br to-transparent p-5 text-left card-glow transition-all hover:-translate-y-0.5',
-                t.grad, t.ring, isActive && t.active
+                'relative overflow-hidden rounded-2xl border border-white/10 p-5 text-left transition-all hover:-translate-y-0.5 hover:border-white/20 hover:shadow-lg hover:shadow-blue-500/10',
+                isActive && 'ring-2 ring-blue-400/40'
               )}
+              style={{ background: 'rgba(255,255,255,0.02)' }}
             >
               <div className="flex items-center gap-4">
                 <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg', t.tile)}>
@@ -156,7 +159,7 @@ export default function Suppliers() {
                 <div className="min-w-0">
                   <div className={cn('text-xs font-semibold uppercase tracking-wider', t.text)}>{s.label}</div>
                   <div className="mt-1 text-3xl font-bold text-foreground">{s.value}</div>
-                  <div className="text-xs text-muted-foreground">{s.sub}</div>
+                  <div className="text-xs text-gray-400">{s.sub}</div>
                 </div>
               </div>
             </button>
@@ -167,19 +170,19 @@ export default function Suppliers() {
       {/* Toolbar */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1 lg:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm nhà cung cấp..." className="pl-9" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm nhà cung cấp..." className="rounded-xl border-white/10 bg-white/5 pl-9 focus:border-blue-500/50 focus:bg-white/10" />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={cat} onValueChange={setCat}>
-            <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[170px] rounded-xl border-white/10 bg-white/5"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả danh mục</SelectItem>
               {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={tab} onValueChange={setTab}>
-            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[160px] rounded-xl border-white/10 bg-white/5"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
               <SelectItem value="active">Đang hợp tác</SelectItem>
@@ -187,19 +190,19 @@ export default function Suppliers() {
               <SelectItem value="inactive">Ngừng hợp tác</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex overflow-hidden rounded-lg border border-border">
-            <button className="bg-primary px-2.5 py-2 text-primary-foreground"><List className="h-4 w-4" /></button>
-            <button className="px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent"><LayoutGrid className="h-4 w-4" /></button>
+          <div className="flex overflow-hidden rounded-xl border border-white/10">
+            <button className="bg-blue-600 px-2.5 py-2 text-white"><List className="h-4 w-4" /></button>
+            <button className="px-2.5 py-2 text-gray-400 transition-colors hover:bg-white/5"><LayoutGrid className="h-4 w-4" /></button>
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-2xl border-white/10" style={{ background: 'rgba(255,255,255,0.02)' }}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] text-sm">
             <thead>
-              <tr className="border-b border-border bg-secondary/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b border-white/10 bg-white/5 text-left text-xs uppercase tracking-wider text-gray-400">
                 <th className="p-4 font-semibold">Nhà cung cấp</th>
                 <th className="p-4 font-semibold">Danh mục</th>
                 <th className="p-4 font-semibold">Sản phẩm cung cấp</th>
@@ -210,11 +213,11 @@ export default function Suppliers() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="p-16 text-center text-sm text-muted-foreground"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
+                <tr><td colSpan={6} className="p-16 text-center text-sm text-gray-400"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
               ) : error ? (
-                <tr><td colSpan={6} className="p-10 text-center text-sm text-destructive">Không tải được dữ liệu: {error.message}</td></tr>
+                <tr><td colSpan={6} className="p-10 text-center text-sm text-red-400">Không tải được dữ liệu: {error.message}</td></tr>
               ) : filtered.map((s) => (
-                <tr key={s.id} className="border-b border-border/60 transition-colors last:border-0 hover:bg-secondary/30">
+                <tr key={s.id} className="border-b border-white/10 transition-colors last:border-0 hover:bg-white/5">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       {s.logo_url ? (
@@ -283,7 +286,7 @@ export default function Suppliers() {
       <ConfirmDialog
         open={!!confirmDel}
         title="Xóa nhà cung cấp?"
-        message={confirmDel ? `Bạn có chắc muốn xóa “${confirmDel.name}”? Hành động này không thể hoàn tác.` : ''}
+        message={confirmDel ? `Bạn có chắc muốn xóa "${confirmDel.name}"? Hành động này không thể hoàn tác.` : ''}
         loading={deleting}
         onClose={() => setConfirmDel(null)}
         onConfirm={handleDelete}

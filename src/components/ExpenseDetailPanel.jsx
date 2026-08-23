@@ -1,6 +1,6 @@
 import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Pencil, Trash2, Plus, Clock } from 'lucide-react'
+import { Pencil, Trash2, Plus } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -20,12 +20,12 @@ function fmtDate(iso) {
 }
 
 function SectionTitle({ children }) {
-  return <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{children}</h3>
+  return <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-gray-400">{children}</h3>
 }
 function Field({ label, children }) {
   return (
     <div className="flex gap-4 py-2 text-sm">
-      <span className="w-32 shrink-0 text-muted-foreground">{label}</span>
+      <span className="w-32 shrink-0 text-gray-400">{label}</span>
       <span className="flex-1 text-foreground">{children}</span>
     </div>
   )
@@ -33,120 +33,130 @@ function Field({ label, children }) {
 
 // expense: { ...item, icon, actual, displayStatus, transactions }
 export default function ExpenseDetailPanel({ expense, onClose, onEdit, onDelete, onRecord }) {
-  return (
-    <AnimatePresence>
-      {expense && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-          />
-          <motion.aside
-            key={expense.id}
-            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 380, damping: 40 }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[440px] flex-col border-l border-border bg-card shadow-2xl"
-          >
-            <PanelBody e={expense} onClose={onClose} onEdit={onEdit} onDelete={onDelete} onRecord={onRecord} />
-          </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
-  )
-}
-
-function PanelBody({ e, onClose, onEdit, onDelete, onRecord }) {
-  const planned = e.planned || 0
-  const actual = e.actual || 0
+  const planned = expense?.planned || 0
+  const actual = expense?.actual || 0
   const diff = actual - planned
   const ratio = planned > 0 ? (actual / planned) * 100 : 0
-  const st = STATUS[e.displayStatus] || STATUS.pending
-  const txs = e.transactions || []
+  const st = STATUS[expense?.displayStatus] || STATUS.pending
+  const txs = expense?.transactions || []
 
   return (
-    <>
-      <div className="flex items-center justify-between border-b border-border px-5 py-4">
-        <h2 className="font-display text-xl text-foreground">Chi tiết khoản chi</h2>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Đóng"><X className="h-5 w-5" /></Button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-5 pb-5">
-        <div className="flex items-center gap-3 py-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-2xl">{e.icon}</div>
-          <div>
-            <div className="font-semibold text-foreground">{e.name}</div>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">{e.category}</span>
-              <Badge variant={st.variant}>{st.label}</Badge>
+    <Dialog open={!!expense} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent maxWidth="3xl" onClose={onClose}>
+        <DialogHeader>
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 text-3xl shadow-lg">
+              {expense?.icon}
+            </div>
+            <div className="flex-1">
+              <DialogTitle>{expense?.name}</DialogTitle>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-sm text-gray-400">{expense?.category}</span>
+                <Badge variant={st.variant}>{st.label}</Badge>
+              </div>
             </div>
           </div>
-        </div>
+        </DialogHeader>
 
-        <SectionTitle>Thông tin chung</SectionTitle>
-        <Field label="Hạng mục"><span className="inline-flex items-center gap-1.5">{e.icon} {e.category || '—'}</span></Field>
-        <Field label="Khoản chi">{e.name}</Field>
-        <Field label="Người phụ trách">
-          {e.owner ? (
-            <span className="inline-flex items-center gap-1.5">
-              <Avatar className="h-5 w-5"><AvatarFallback className="text-[10px]">{e.owner.charAt(0)}</AvatarFallback></Avatar>
-              {e.owner}
-            </span>
-          ) : '—'}
-        </Field>
+        <DialogBody>
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Left column */}
+            <div className="space-y-6">
+              <div>
+                <SectionTitle>Thông tin chung</SectionTitle>
+                <Field label="Hạng mục">
+                  <span className="inline-flex items-center gap-1.5">{expense?.icon} {expense?.category || '—'}</span>
+                </Field>
+                <Field label="Khoản chi">{expense?.name}</Field>
+                <Field label="Người phụ trách">
+                  {expense?.owner ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Avatar className="h-5 w-5">
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-[10px] font-semibold text-white">
+                          {expense.owner.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {expense.owner}
+                    </span>
+                  ) : '—'}
+                </Field>
+              </div>
 
-        <SectionTitle>Ngân sách</SectionTitle>
-        <div className="flex justify-between py-2 text-sm">
-          <span className="text-muted-foreground">Dự toán</span>
-          <span className="font-medium text-foreground">{formatVND(planned)}</span>
-        </div>
-        <div className="flex justify-between py-2 text-sm">
-          <span className="text-muted-foreground">Thực chi</span>
-          <span className="font-medium text-foreground">{formatVND(actual)}</span>
-        </div>
-        <div className="flex justify-between py-2 text-sm">
-          <span className="text-muted-foreground">Chênh lệch</span>
-          <span className={cn('font-medium', diff > 0 ? 'text-destructive' : 'text-success')}>{diff > 0 ? '+' : ''}{formatVND(diff)}</span>
-        </div>
-        <div className="py-2">
-          <div className="mb-1.5 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Tỷ lệ</span>
-            <span className="font-medium text-foreground">{ratio.toFixed(1)}%</span>
-          </div>
-          <Progress value={Math.min(ratio, 100)} indicatorClassName={ratio > 100 ? 'bg-destructive' : 'bg-success'} />
-        </div>
-
-        <div className="mb-2 mt-6 flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lịch sử chi ({txs.length})</h3>
-          <button onClick={() => onRecord(e)} className="flex items-center gap-1 text-xs text-primary hover:underline"><Plus className="h-3 w-3" /> Ghi nhận chi</button>
-        </div>
-        {txs.length === 0 ? (
-          <p className="py-2 text-sm text-muted-foreground">Chưa có giao dịch chi nào.</p>
-        ) : (
-          <div className="space-y-3 py-2">
-            {txs.map((t) => (
-              <div key={t.id} className="flex gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/15 text-success"><Clock className="h-4 w-4" /></div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-foreground"><span className="font-medium">{formatVND(t.amount)}</span>{t.note ? ` — ${t.note}` : ''}</p>
-                  <span className="text-xs text-muted-foreground">{fmtDate(t.spent_at)}</span>
+              <div>
+                <SectionTitle>Ngân sách</SectionTitle>
+                <div className="space-y-3 rounded-xl border border-white/10 p-4" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Dự toán</span>
+                    <span className="font-medium text-foreground">{formatVND(planned)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Thực chi</span>
+                    <span className="font-medium text-foreground">{formatVND(actual)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Chênh lệch</span>
+                    <span className={cn('font-medium', diff > 0 ? 'text-red-400' : 'text-emerald-400')}>
+                      {diff > 0 ? '+' : ''}{formatVND(diff)}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between text-sm">
+                      <span className="text-gray-400">Tỷ lệ</span>
+                      <span className="font-medium text-foreground">{ratio.toFixed(1)}%</span>
+                    </div>
+                    <Progress value={Math.min(ratio, 100)} indicatorClassName={ratio > 100 ? 'bg-red-500' : 'bg-emerald-500'} />
+                  </div>
                 </div>
               </div>
-            ))}
+
+              {expense?.note && (
+                <div>
+                  <SectionTitle>Ghi chú</SectionTitle>
+                  <p className="rounded-xl border border-white/10 p-4 text-sm text-gray-300" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                    {expense.note}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Right column */}
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <SectionTitle className="mb-0">Lịch sử chi ({txs.length})</SectionTitle>
+                <button onClick={() => onRecord(expense)} className="flex items-center gap-1 text-xs text-blue-400 transition-colors hover:text-blue-300">
+                  <Plus className="h-3 w-3" /> Ghi nhận chi
+                </button>
+              </div>
+              {txs.length === 0 ? (
+                <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-white/10 text-sm text-gray-400">
+                  Chưa có giao dịch chi nào
+                </div>
+              ) : (
+                <div className="max-h-[400px] space-y-2 overflow-y-auto pr-2">
+                  {txs.map((t) => (
+                    <div key={t.id} className="flex items-center justify-between rounded-xl border border-white/10 p-4 transition-colors hover:bg-white/5" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-foreground">{formatVND(t.amount)}</p>
+                        {t.note && <p className="mt-0.5 text-xs text-gray-400">{t.note}</p>}
+                      </div>
+                      <span className="ml-3 text-xs text-gray-400">{fmtDate(t.spent_at)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </DialogBody>
 
-        {e.note && (<><SectionTitle>Ghi chú</SectionTitle><p className="py-1 text-sm text-foreground">{e.note}</p></>)}
-      </div>
-
-      <div className="flex gap-3 border-t border-border p-4">
-        <Button variant="outline" onClick={() => onDelete(e)} className="flex-1 border-destructive/40 text-destructive hover:bg-destructive/10">
-          <Trash2 className="h-4 w-4" /> Xóa
-        </Button>
-        <Button className="flex-1" onClick={() => onEdit(e)}>
-          <Pencil className="h-4 w-4" /> Chỉnh sửa
-        </Button>
-      </div>
-    </>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onDelete(expense)} className="rounded-xl border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20">
+            <Trash2 className="h-4 w-4" /> Xóa
+          </Button>
+          <Button className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30" onClick={() => onEdit(expense)}>
+            <Pencil className="h-4 w-4" /> Chỉnh sửa
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

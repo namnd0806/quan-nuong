@@ -24,12 +24,12 @@ import { useAuth } from '@/context/AuthContext'
 import { formatVND, cn } from '@/lib/utils'
 
 const CAT = {
-  'Xây dựng': { icon: '🏗️', color: 'hsl(221 83% 53%)' },
-  'Thiết bị': { icon: '🍳', color: 'hsl(160 84% 39%)' },
-  'Bàn ghế': { icon: '🪑', color: 'hsl(38 92% 50%)' },
-  'Biển hiệu': { icon: '🪧', color: 'hsl(262 83% 66%)' },
-  'Marketing': { icon: '📣', color: 'hsl(330 81% 60%)' },
-  'Khác': { icon: '📦', color: 'hsl(215 20% 45%)' },
+  'Xây dựng': { icon: '🏗️', color: '#FB923C' },
+  'Thiết bị': { icon: '🍳', color: '#34D399' },
+  'Bàn ghế': { icon: '🪑', color: '#FBBF24' },
+  'Biển hiệu': { icon: '🪧', color: '#A78BFA' },
+  'Marketing': { icon: '📣', color: '#EC4899' },
+  'Khác': { icon: '📦', color: '#6B7280' },
 }
 const CATEGORIES = Object.keys(CAT)
 const catMeta = (c) => CAT[c] || { icon: '📦', color: 'hsl(215 20% 45%)' }
@@ -49,9 +49,16 @@ const toneMap = {
 }
 
 const chartTooltip = {
-  contentStyle: { background: 'hsl(222 47% 11%)', border: '1px solid hsl(217 33% 22%)', borderRadius: 12, color: '#f8fafc', boxShadow: '0 10px 30px rgba(0,0,0,0.4)' },
+  contentStyle: {
+    background: 'rgba(10, 22, 40, 0.95)',
+    border: '1px solid rgba(59, 130, 246, 0.2)',
+    borderRadius: 12,
+    color: '#f8fafc',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    backdropFilter: 'blur(12px)',
+  },
   itemStyle: { color: '#f8fafc' },
-  labelStyle: { color: '#cbd5e1', fontWeight: 600, marginBottom: 4 },
+  labelStyle: { color: 'rgba(148, 163, 184, 1)', fontWeight: 600, marginBottom: 4 },
 }
 
 function fmtDate(iso) {
@@ -154,7 +161,7 @@ export default function Budget() {
       if (draft.id) await update(draft.id, values)
       else await create(values)
       setFormOpen(false); setEditing(null)
-      toast.success(draft.id ? `Đã cập nhật “${values.name}”.` : `Đã thêm khoản “${values.name}”.`)
+      toast.success(draft.id ? `Đã cập nhật "${values.name}".` : `Đã thêm khoản "${values.name}".`)
     } catch (e) { toast.error('Lưu khoản chi thất bại: ' + e.message) }
     finally { setSaving(false) }
   }
@@ -178,87 +185,102 @@ export default function Budget() {
     try {
       const name = confirmDel?.name
       await remove(confirmDel.id); setConfirmDel(null); setSelected(null)
-      toast.success(`Đã xóa “${name}”.`)
+      toast.success(`Đã xóa "${name}".`)
     }
     catch (e) { toast.error('Xóa thất bại: ' + e.message) }
     finally { setDeleting(false) }
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-display text-foreground md:text-3xl">Ngân sách</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Quản lý ngân sách dự kiến và chi phí mở quán</p>
+          <h1 className="text-3xl font-bold text-foreground">Ngân sách</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">Quản lý ngân sách dự kiến và chi phí mở quán</p>
         </div>
-        <Button onClick={openAdd}><Plus className="h-4 w-4" /> Thêm khoản chi</Button>
+        <Button onClick={openAdd} className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40">
+          <Plus className="h-4 w-4" /> Thêm khoản chi
+        </Button>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {summary.map((s) => {
+        {summary.map((s, i) => {
           const Icon = s.icon
-          const t = toneMap[s.tone]
+          const colors = {
+            primary: { bg: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.3)', text: 'text-blue-400' },
+            success: { bg: 'rgba(52, 211, 153, 0.15)', border: 'rgba(52, 211, 153, 0.3)', text: 'text-emerald-400' },
+            warning: { bg: 'rgba(251, 146, 60, 0.15)', border: 'rgba(251, 146, 60, 0.3)', text: 'text-orange-400' },
+            destructive: { bg: 'rgba(248, 113, 113, 0.15)', border: 'rgba(248, 113, 113, 0.3)', text: 'text-red-400' },
+          }
+          const color = colors[s.tone]
           return (
-            <Card key={s.label}>
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</span>
-                  <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg', t.bg)}>
-                    <Icon className={cn('h-4 w-4', t.text)} />
+            <motion.div
+              key={s.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: i * 0.05 }}
+            >
+              <Card className="rounded-2xl border border-white/10 transition-all hover:border-white/20 hover:shadow-xl" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{s.label}</span>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: color.bg, border: `1px solid ${color.border}` }}>
+                      <Icon className={cn('h-5 w-5', color.text)} />
+                    </div>
                   </div>
-                </div>
-                <div className={cn('mt-3 text-2xl font-bold', s.tone === 'destructive' ? 'text-destructive' : 'text-foreground')}>{s.value}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{s.sub}</div>
-              </CardContent>
-            </Card>
+                  <div className={cn('mt-3 text-2xl font-bold', s.tone === 'destructive' ? 'text-red-400' : 'text-foreground')}>{s.value}</div>
+                  <div className="mt-1 text-xs text-gray-400">{s.sub}</div>
+                </CardContent>
+              </Card>
+            </motion.div>
           )
         })}
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader><CardTitle className="text-base">Dự toán vs Thực chi (triệu đ)</CardTitle></CardHeader>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <Card className="rounded-2xl border border-white/10 lg:col-span-2" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
+          <CardHeader><CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-300">DỰ TOÁN VS THỰC CHI (TRIỆU Đ)</CardTitle></CardHeader>
           <CardContent>
             {chartData.length === 0 ? (
               <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">Chưa có dữ liệu</div>
             ) : (
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(217 33% 15%)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fill: 'hsl(215 20% 65%)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'hsl(215 20% 65%)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip {...chartTooltip} cursor={{ fill: 'hsl(217 33% 15% / 0.4)' }} />
-                  <Bar dataKey="Dự toán" fill="hsl(221 83% 53%)" radius={[4, 4, 0, 0]} maxBarSize={28} />
-                  <Bar dataKey="Thực chi" fill="hsl(160 84% 39%)" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: 'rgba(148,163,184,0.8)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'rgba(148,163,184,0.8)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip {...chartTooltip} cursor={{ fill: 'rgba(59,130,246,0.1)' }} />
+                  <Bar dataKey="Dự toán" fill="#3B82F6" radius={[6, 6, 0, 0]} maxBarSize={32} />
+                  <Bar dataKey="Thực chi" fill="#34D399" radius={[6, 6, 0, 0]} maxBarSize={32} />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base">Phân bổ ngân sách</CardTitle></CardHeader>
+        <Card className="rounded-2xl border border-white/10" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
+          <CardHeader><CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-300">PHÂN BỔ NGÂN SÁCH</CardTitle></CardHeader>
           <CardContent>
             {allocation.length === 0 ? (
               <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">Chưa có dữ liệu</div>
             ) : (
-              <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center gap-4">
                 <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
-                    <Pie data={allocation} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={2} dataKey="value" stroke="none">
+                    <Pie data={allocation} cx="50%" cy="50%" innerRadius={52} outerRadius={76} paddingAngle={3} dataKey="value" stroke="none">
                       {allocation.map((a, i) => <Cell key={i} fill={a.color} />)}
                     </Pie>
                     <Tooltip {...chartTooltip} formatter={(v) => formatVND(v)} />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="w-full space-y-1.5">
+                <div className="w-full space-y-2">
                   {allocation.map((a) => (
                     <div key={a.name} className="flex items-center gap-2 text-xs">
-                      <span className="h-2 w-2 rounded-full" style={{ background: a.color }} />
-                      <span className="flex-1 text-muted-foreground">{a.name}</span>
-                      <span className="font-medium text-foreground">{a.pct.toFixed(0)}%</span>
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: a.color }} />
+                      <span className="flex-1 text-gray-300">{a.name}</span>
+                      <span className="font-semibold text-foreground">{a.pct.toFixed(0)}%</span>
                     </div>
                   ))}
                 </div>
@@ -270,20 +292,20 @@ export default function Budget() {
 
       {/* Toolbar */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="relative flex-1 lg:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm khoản chi..." className="pl-9" />
+        <div className="relative flex-1 lg:max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm khoản chi..." className="rounded-xl border-white/10 bg-white/5 pl-10 backdrop-blur-sm focus:border-blue-500/50 focus:bg-white/10" />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={tab} onValueChange={setTab}>
-            <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[170px] rounded-xl border-white/10 bg-white/5"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả hạng mục</SelectItem>
               {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[170px] rounded-xl border-white/10 bg-white/5"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
               {Object.entries(STATUS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
@@ -293,18 +315,18 @@ export default function Budget() {
       </div>
 
       {/* Category tabs */}
-      <div className="flex flex-wrap gap-1 rounded-lg bg-secondary/60 p-1">
+      <div className="flex flex-wrap gap-2 rounded-xl border border-white/10 bg-white/5 p-2">
         {CAT_TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all',
-              tab === t.key ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all',
+              tab === t.key ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
             )}
           >
             {t.label}
-            <Badge variant={tab === t.key ? 'default' : 'muted'} className={cn('h-5 min-w-5 justify-center px-1.5', tab === t.key && 'bg-primary-foreground/20 text-primary-foreground')}>
+            <Badge variant={tab === t.key ? 'default' : 'muted'} className={cn('h-5 min-w-5 justify-center px-2', tab === t.key ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-400')}>
               {t.count}
             </Badge>
           </button>
@@ -312,18 +334,18 @@ export default function Budget() {
       </div>
 
       {/* Table */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-2xl border border-white/10" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-sm">
             <thead>
-              <tr className="border-b border-border bg-secondary/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <th className="p-4 font-semibold">Khoản chi</th>
-                <th className="p-4 font-semibold">Hạng mục</th>
-                <th className="p-4 font-semibold">Dự toán</th>
-                <th className="p-4 font-semibold">Thực chi</th>
-                <th className="p-4 font-semibold">Phụ trách</th>
-                <th className="p-4 font-semibold">Trạng thái</th>
-                <th className="w-28 p-4 font-semibold">Thao tác</th>
+              <tr className="border-b border-white/10 text-left text-xs uppercase tracking-wider text-gray-400" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                <th className="p-4 font-semibold">KHOẢN CHI</th>
+                <th className="p-4 font-semibold">HẠNG MỤC</th>
+                <th className="p-4 font-semibold">Dự TOÁN</th>
+                <th className="p-4 font-semibold">THỰC CHI</th>
+                <th className="p-4 font-semibold">PHỤ TRÁCH</th>
+                <th className="p-4 font-semibold">TRẠNG THÁI</th>
+                <th className="w-28 p-4 font-semibold">THAO TÁC</th>
               </tr>
             </thead>
             <tbody>
@@ -334,30 +356,44 @@ export default function Budget() {
               ) : filtered.map((e) => {
                 const st = STATUS[e.displayStatus] || STATUS.pending
                 return (
-                  <tr key={e.id} onClick={() => setSelected(e)} className="cursor-pointer border-b border-border/60 transition-colors last:border-0 hover:bg-secondary/30">
+                  <tr key={e.id} onClick={() => setSelected(e)} className="cursor-pointer border-b border-white/5 transition-all last:border-0 hover:bg-white/5">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-xl">{e.icon}</div>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-xl">{e.icon}</div>
                         <div className="font-medium text-foreground">{e.name}</div>
                       </div>
                     </td>
-                    <td className="p-4 text-muted-foreground">{e.category || '—'}</td>
+                    <td className="p-4">
+                      {e.category ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold" style={{ background: `${catMeta(e.category).color}20`, color: catMeta(e.category).color }}>
+                          {e.category}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500">—</span>
+                      )}
+                    </td>
                     <td className="p-4 font-semibold text-foreground">{formatVND(e.planned)}</td>
-                    <td className="p-4 text-muted-foreground">{formatVND(e.actual)}</td>
+                    <td className="p-4 text-gray-300">{formatVND(e.actual)}</td>
                     <td className="p-4">
                       {e.owner ? (
-                        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                          <Avatar className="h-6 w-6"><AvatarFallback className="text-[10px]">{e.owner.charAt(0)}</AvatarFallback></Avatar>
-                          {e.owner}
+                        <span className="inline-flex items-center gap-1.5">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-[10px] font-semibold text-white">
+                              {e.owner.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-gray-300">{e.owner}</span>
                         </span>
-                      ) : '—'}
+                      ) : (
+                        <span className="text-gray-500">—</span>
+                      )}
                     </td>
                     <td className="p-4"><Badge variant={st.variant}>{st.label}</Badge></td>
                     <td className="p-4" onClick={(ev) => ev.stopPropagation()}>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Ghi nhận chi" onClick={() => setRecordFor(e)}><Plus className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Chỉnh sửa" onClick={() => openEdit(e)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" title="Xóa" onClick={() => setConfirmDel(e)}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/10" title="Ghi nhận chi" onClick={() => setRecordFor(e)}><Plus className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/10" title="Chỉnh sửa" onClick={() => openEdit(e)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-gray-400 hover:bg-red-500/10 hover:text-red-400" title="Xóa" onClick={() => setConfirmDel(e)}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </td>
                   </tr>
@@ -371,7 +407,7 @@ export default function Budget() {
         </div>
       </Card>
 
-      {!loading && !error && <div className="text-sm text-muted-foreground">Hiển thị {filtered.length} / {enriched.length} khoản chi</div>}
+      {!loading && !error && <div className="text-sm text-gray-400">Hiển thị {filtered.length} / {enriched.length} khoản chi</div>}
 
       <ExpenseDetailPanel
         expense={selected}
@@ -397,7 +433,7 @@ export default function Budget() {
       <ConfirmDialog
         open={!!confirmDel}
         title="Xóa khoản chi?"
-        message={confirmDel ? `Bạn có chắc muốn xóa “${confirmDel.name}”? Toàn bộ giao dịch chi liên quan cũng sẽ bị xóa.` : ''}
+        message={confirmDel ? `Bạn có chắc muốn xóa "${confirmDel.name}"? Toàn bộ giao dịch chi liên quan cũng sẽ bị xóa.` : ''}
         loading={deleting}
         onClose={() => setConfirmDel(null)}
         onConfirm={handleDelete}
@@ -427,41 +463,44 @@ function BudgetItemFormPanel({ open, item, owners, saving, onClose, onSave }) {
         <>
           <Backdrop onClose={onClose} />
           <motion.aside
-            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 380, damping: 40 }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[440px] flex-col border-l border-border bg-card shadow-2xl"
+            initial={{ x: '100%', opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '100%', opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[500px] flex-col overflow-hidden rounded-l-3xl border-l border-white/10 shadow-2xl"
+            style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.98), rgba(10,22,40,0.98))' }}
           >
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <h2 className="font-display text-xl text-foreground">{item ? 'Chỉnh sửa khoản chi' : 'Thêm khoản chi'}</h2>
-              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Đóng"><X className="h-5 w-5" /></Button>
+            <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+              <h2 className="text-xl font-bold text-foreground">{item ? 'Chỉnh sửa khoản chi' : 'Thêm khoản chi'}</h2>
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Đóng" className="rounded-xl hover:bg-white/10"><X className="h-5 w-5" /></Button>
             </div>
-            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+            <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
               <div>
                 <FieldLabel required>Tên khoản chi</FieldLabel>
-                <Input placeholder="VD: Thi công quầy bar" value={form.name} onChange={(e) => set('name', e.target.value)} />
+                <Input placeholder="VD: Thi công quầy bar" value={form.name} onChange={(e) => set('name', e.target.value)} className="rounded-xl border-white/10 bg-white/5 focus:border-blue-500/50 focus:bg-white/10" />
               </div>
               <div>
                 <FieldLabel required>Hạng mục</FieldLabel>
                 <Select value={form.category || undefined} onValueChange={(v) => set('category', v)}>
-                  <SelectTrigger><SelectValue placeholder="Chọn hạng mục" /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl border-white/10 bg-white/5"><SelectValue placeholder="Chọn hạng mục" /></SelectTrigger>
                   <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <FieldLabel>Dự toán (VND)</FieldLabel>
-                <Input inputMode="numeric" placeholder="Nhập số tiền dự toán" value={form.planned} onChange={(e) => set('planned', e.target.value.replace(/[^\d]/g, ''))} />
+                <Input inputMode="numeric" placeholder="Nhập số tiền dự toán" value={form.planned} onChange={(e) => set('planned', e.target.value.replace(/[^\d]/g, ''))} className="rounded-xl border-white/10 bg-white/5 focus:border-blue-500/50 focus:bg-white/10" />
               </div>
               <div>
                 <FieldLabel>Người phụ trách</FieldLabel>
                 <Select value={form.owner || undefined} onValueChange={(v) => set('owner', v)}>
-                  <SelectTrigger><SelectValue placeholder="Chọn người phụ trách" /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl border-white/10 bg-white/5"><SelectValue placeholder="Chọn người phụ trách" /></SelectTrigger>
                   <SelectContent>{owners.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <FieldLabel>Trạng thái</FieldLabel>
                 <Select value={form.status} onValueChange={(v) => set('status', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl border-white/10 bg-white/5"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Chờ thanh toán</SelectItem>
                     <SelectItem value="partial">Một phần</SelectItem>
@@ -476,13 +515,13 @@ function BudgetItemFormPanel({ open, item, owners, saving, onClose, onSave }) {
                   onChange={(e) => set('note', e.target.value)}
                   rows={3}
                   placeholder="Ghi chú thêm..."
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-foreground ring-offset-background placeholder:text-gray-500 focus:border-blue-500/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-3 border-t border-border px-5 py-4">
-              <Button variant="secondary" onClick={onClose} disabled={saving}>Hủy</Button>
-              <Button onClick={submit} disabled={!valid || saving}>
+            <div className="flex justify-end gap-3 border-t border-white/10 px-6 py-4">
+              <Button variant="secondary" onClick={onClose} disabled={saving} className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">Hủy</Button>
+              <Button onClick={submit} disabled={!valid || saving} className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30">
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {item ? 'Lưu thay đổi' : 'Thêm khoản chi'}
               </Button>
@@ -513,37 +552,40 @@ function RecordSpendingModal({ item, saving, onClose, onSave }) {
     <AnimatePresence>
       {item && (
         <div className="fixed inset-0 z-[55] flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 12 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 shadow-2xl"
+            style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.98), rgba(10,22,40,0.98))' }}
           >
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <h2 className="font-display text-xl text-foreground">Ghi nhận chi</h2>
-              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Đóng"><X className="h-5 w-5" /></Button>
+            <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+              <h2 className="text-xl font-bold text-foreground">Ghi nhận chi</h2>
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Đóng" className="rounded-xl hover:bg-white/10"><X className="h-5 w-5" /></Button>
             </div>
-            <div className="space-y-4 px-5 py-5">
-              <p className="text-sm text-muted-foreground">Khoản chi: <span className="font-medium text-foreground">{item.name}</span></p>
+            <div className="space-y-4 px-6 py-6">
+              <p className="text-sm text-gray-400">Khoản chi: <span className="font-semibold text-foreground">{item.name}</span></p>
               <div>
                 <FieldLabel required>Số tiền (VND)</FieldLabel>
-                <Input inputMode="numeric" placeholder="Nhập số tiền đã chi" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))} autoFocus />
+                <Input inputMode="numeric" placeholder="Nhập số tiền đã chi" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))} autoFocus className="rounded-xl border-white/10 bg-white/5 focus:border-blue-500/50 focus:bg-white/10" />
               </div>
               <div>
                 <FieldLabel required>Ngày chi</FieldLabel>
                 <div className="relative">
-                  <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input type="date" value={spentAt} onChange={(e) => setSpentAt(e.target.value)} className="pl-9" />
+                  <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input type="date" value={spentAt} onChange={(e) => setSpentAt(e.target.value)} className="rounded-xl border-white/10 bg-white/5 pl-10 focus:border-blue-500/50 focus:bg-white/10" />
                 </div>
               </div>
               <div>
                 <FieldLabel>Ghi chú</FieldLabel>
-                <Input placeholder="VD: Đặt cọc đợt 1" value={note} onChange={(e) => setNote(e.target.value)} />
+                <Input placeholder="VD: Đặt cọc đợt 1" value={note} onChange={(e) => setNote(e.target.value)} className="rounded-xl border-white/10 bg-white/5 focus:border-blue-500/50 focus:bg-white/10" />
               </div>
             </div>
-            <div className="flex justify-end gap-3 border-t border-border px-5 py-4">
-              <Button variant="secondary" onClick={onClose} disabled={saving}>Hủy</Button>
-              <Button onClick={submit} disabled={!valid || saving}>
+            <div className="flex justify-end gap-3 border-t border-white/10 px-6 py-4">
+              <Button variant="secondary" onClick={onClose} disabled={saving} className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">Hủy</Button>
+              <Button onClick={submit} disabled={!valid || saving} className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30">
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 Ghi nhận
               </Button>
@@ -557,8 +599,8 @@ function RecordSpendingModal({ item, saving, onClose, onSave }) {
 
 function FieldLabel({ children, required }) {
   return (
-    <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-      {children}{required && <span className="text-destructive"> *</span>}
+    <label className="mb-1.5 block text-xs font-medium text-gray-400">
+      {children}{required && <span className="text-red-400"> *</span>}
     </label>
   )
 }

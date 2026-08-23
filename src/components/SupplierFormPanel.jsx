@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, X as XIcon } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
@@ -10,8 +10,8 @@ import { CATEGORIES } from '@/lib/suppliers'
 
 function Label({ children, required }) {
   return (
-    <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-      {children}{required && <span className="text-destructive"> *</span>}
+    <label className="mb-1.5 block text-xs font-medium text-gray-400">
+      {children}{required && <span className="text-red-400"> *</span>}
     </label>
   )
 }
@@ -52,28 +52,16 @@ export default function SupplierFormPanel({ open, mode = 'add', initial, saving,
   }
 
   return (
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 12 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-            className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
-          >
-            <div className="flex items-center justify-between border-b border-border px-6 py-4">
-              <h2 className="font-display text-2xl text-foreground">{title}</h2>
-              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Đóng"><X className="h-5 w-5" /></Button>
-            </div>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent maxWidth="3xl" onClose={onClose}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
 
-            <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Logo nhà cung cấp</h3>
+        <DialogBody>
+          <div className="space-y-5">
+            <div>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Logo nhà cung cấp</h3>
               <ImageUpload
                 value={form.logo_url}
                 onChange={(v) => set('logo_url', v)}
@@ -82,95 +70,102 @@ export default function SupplierFormPanel({ open, mode = 'add', initial, saving,
                 shape="circle"
                 onError={(m) => toast.error(m)}
               />
+            </div>
 
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Thông tin cơ bản</h3>
-              <div>
-                <Label required>Tên nhà cung cấp</Label>
-                <Input placeholder="Nhập tên nhà cung cấp" value={form.name} onChange={(e) => set('name', e.target.value)} />
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Thông tin cơ bản</h3>
+              <div className="space-y-4">
                 <div>
-                  <Label>Số điện thoại</Label>
-                  <Input placeholder="Nhập số điện thoại" value={form.code} onChange={(e) => set('code', e.target.value)} inputMode="tel" />
+                  <Label required>Tên nhà cung cấp</Label>
+                  <Input placeholder="Nhập tên nhà cung cấp" value={form.name} onChange={(e) => set('name', e.target.value)} />
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>Số điện thoại</Label>
+                    <Input placeholder="Nhập số điện thoại" value={form.code} onChange={(e) => set('code', e.target.value)} inputMode="tel" />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input placeholder="Nhập email (nếu có)" value={form.email} onChange={(e) => set('email', e.target.value)} type="email" />
+                  </div>
                 </div>
                 <div>
-                  <Label>Email</Label>
-                  <Input placeholder="Nhập email (nếu có)" value={form.email} onChange={(e) => set('email', e.target.value)} type="email" />
+                  <Label>Địa chỉ</Label>
+                  <Input placeholder="Nhập địa chỉ" value={form.address} onChange={(e) => set('address', e.target.value)} />
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label required>Danh mục</Label>
+                    <Select value={form.tag} onValueChange={(v) => set('tag', v)}>
+                      <SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label required>Trạng thái</Label>
+                    <Select value={form.status} onValueChange={(v) => set('status', v)}>
+                      <SelectTrigger><SelectValue placeholder="Chọn trạng thái" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Đang hợp tác</SelectItem>
+                        <SelectItem value="considering">Đang xem xét</SelectItem>
+                        <SelectItem value="inactive">Ngừng hợp tác</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-              <div>
-                <Label>Địa chỉ</Label>
-                <Input placeholder="Nhập địa chỉ" value={form.address} onChange={(e) => set('address', e.target.value)} />
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <Label required>Danh mục</Label>
-                  <Select value={form.tag} onValueChange={(v) => set('tag', v)}>
-                    <SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label required>Trạng thái</Label>
-                  <Select value={form.status} onValueChange={(v) => set('status', v)}>
-                    <SelectTrigger><SelectValue placeholder="Chọn trạng thái" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Đang hợp tác</SelectItem>
-                      <SelectItem value="considering">Đang xem xét</SelectItem>
-                      <SelectItem value="inactive">Ngừng hợp tác</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+            </div>
 
-              <div>
-                <Label>Sản phẩm cung cấp</Label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Nhập tên sản phẩm rồi Enter"
-                    value={newProduct}
-                    onChange={(e) => setNewProduct(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addProduct() } }}
-                  />
-                  <Button type="button" onClick={addProduct} className="shrink-0"><Plus className="h-4 w-4" /> Thêm</Button>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2 rounded-lg border border-border bg-secondary/30 p-3">
-                  {products.length === 0 && <span className="text-sm text-muted-foreground">Chưa có sản phẩm nào</span>}
-                  {products.map((p) => (
-                    <span key={p} className="inline-flex items-center gap-1.5 rounded-md bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary">
-                      {p}
-                      <button onClick={() => removeProduct(p)} className="hover:text-foreground"><X className="h-3 w-3" /></button>
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-1.5 text-xs text-muted-foreground">Đã có: {products.length} sản phẩm</div>
-              </div>
-
-              <div>
-                <Label>Ghi chú</Label>
-                <textarea
-                  rows={3}
-                  placeholder="Nhập ghi chú (nếu có)"
-                  value={form.note}
-                  onChange={(e) => set('note', e.target.value)}
-                  className="flex w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            <div>
+              <Label>Sản phẩm cung cấp</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nhập tên sản phẩm rồi Enter"
+                  value={newProduct}
+                  onChange={(e) => setNewProduct(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addProduct() } }}
                 />
+                <Button type="button" onClick={addProduct} className="shrink-0 gap-2 rounded-xl">
+                  <Plus className="h-4 w-4" /> Thêm
+                </Button>
               </div>
+              <div className="mt-2 flex min-h-[80px] flex-wrap gap-2 rounded-xl border border-white/10 p-3" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                {products.length === 0 && <span className="text-sm text-gray-400">Chưa có sản phẩm nào</span>}
+                {products.map((p) => (
+                  <span key={p} className="inline-flex h-fit items-center gap-1.5 rounded-full bg-blue-500/20 px-3 py-1 text-xs font-medium text-blue-300">
+                    {p}
+                    <button onClick={() => removeProduct(p)} className="hover:text-white transition-colors"><XIcon className="h-3 w-3" /></button>
+                  </span>
+                ))}
+              </div>
+              <div className="mt-1.5 text-xs text-gray-400">Đã có: {products.length} sản phẩm</div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-border px-6 py-4">
-              <Button variant="secondary" onClick={onClose} disabled={saving}>Hủy</Button>
-              <Button onClick={submit} disabled={!valid || saving}>
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isEdit ? 'Lưu thay đổi' : 'Lưu'}
-              </Button>
+            <div>
+              <Label>Ghi chú</Label>
+              <textarea
+                rows={3}
+                placeholder="Nhập ghi chú (nếu có)"
+                value={form.note}
+                onChange={(e) => set('note', e.target.value)}
+                className="flex w-full rounded-xl border border-white/10 px-3 py-2 text-sm text-foreground transition-colors placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                style={{ background: 'rgba(255,255,255,0.02)' }}
+              />
             </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+          </div>
+        </DialogBody>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving} className="rounded-xl">Hủy</Button>
+          <Button onClick={submit} disabled={!valid || saving} className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30">
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isEdit ? 'Lưu thay đổi' : 'Lưu'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

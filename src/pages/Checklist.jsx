@@ -17,11 +17,11 @@ import { useCollection } from '@/hooks/useCollection'
 import { cn } from '@/lib/utils'
 
 const DEPT = {
-  'Xây dựng': { icon: HardHat, color: 'hsl(38 92% 50%)' },
-  'Thiết bị': { icon: Wrench, color: 'hsl(221 83% 53%)' },
-  'Nội thất': { icon: Sofa, color: 'hsl(262 83% 66%)' },
-  'Marketing': { icon: Megaphone, color: 'hsl(330 81% 60%)' },
-  'Nhân sự': { icon: Users, color: 'hsl(160 84% 39%)' },
+  'Xây dựng': { icon: HardHat, color: '#FB923C' },
+  'Thiết bị': { icon: Wrench, color: '#3B82F6' },
+  'Nội thất': { icon: Sofa, color: '#A78BFA' },
+  'Marketing': { icon: Megaphone, color: '#EC4899' },
+  'Nhân sự': { icon: Users, color: '#34D399' },
 }
 
 const PRIORITY = {
@@ -39,14 +39,6 @@ const STATUS = {
 
 const PRIORITY_OPTIONS = Object.entries(PRIORITY).map(([value, m]) => ({ value, ...m }))
 const STATUS_OPTIONS = Object.entries(STATUS).map(([value, m]) => ({ value, ...m }))
-
-const cardTone = {
-  primary: { grad: 'from-primary/20 via-primary/5', ring: 'border-primary/30', tile: 'from-primary to-info', text: 'text-primary', active: 'ring-2 ring-primary' },
-  warning: { grad: 'from-warning/20 via-warning/5', ring: 'border-warning/30', tile: 'from-warning to-amber-400', text: 'text-warning', active: 'ring-2 ring-warning' },
-  info: { grad: 'from-info/20 via-info/5', ring: 'border-info/30', tile: 'from-info to-purple-400', text: 'text-info', active: 'ring-2 ring-info' },
-  success: { grad: 'from-success/20 via-success/5', ring: 'border-success/30', tile: 'from-success to-emerald-400', text: 'text-success', active: 'ring-2 ring-success' },
-  destructive: { grad: 'from-destructive/20 via-destructive/5', ring: 'border-destructive/30', tile: 'from-destructive to-rose-400', text: 'text-destructive', active: 'ring-2 ring-destructive' },
-}
 
 const DEPARTMENTS = Object.keys(DEPT)
 
@@ -69,7 +61,7 @@ export default function Checklist() {
   const [confirmDel, setConfirmDel] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  const assignees = useMemo(() => (members.length ? members.map((m) => m.name) : ['Nam', 'Phương']), [members])
+  const assignees = useMemo(() => (members.length ? members.map((m) => m.name) : ['Nam', 'Bảo']), [members])
 
   const patch = (id, p) => update(id, p).catch((e) => toast.error('Cập nhật thất bại: ' + e.message))
 
@@ -82,11 +74,11 @@ export default function Checklist() {
   }), [tasks])
 
   const STAT_CARDS = [
-    { key: 'all', label: 'Tất cả', value: counts.all, icon: ClipboardList, tone: 'primary' },
-    { key: 'todo', label: 'Chưa làm', value: counts.todo, icon: Clock, tone: 'warning' },
-    { key: 'doing', label: 'Đang làm', value: counts.doing, icon: Hourglass, tone: 'info' },
-    { key: 'done', label: 'Hoàn thành', value: counts.done, icon: CheckCircle2, tone: 'success' },
-    { key: 'overdue', label: 'Quá hạn', value: counts.overdue, icon: XCircle, tone: 'destructive' },
+    { key: 'all', label: 'TẤT CẢ', value: counts.all, icon: ClipboardList, bg: 'rgba(59, 130, 246, 0.1)', iconBg: 'rgba(59, 130, 246, 0.2)', border: 'rgba(59, 130, 246, 0.3)', text: 'text-blue-400' },
+    { key: 'todo', label: 'CHƯA LÀM', value: counts.todo, icon: Clock, bg: 'rgba(251, 146, 60, 0.1)', iconBg: 'rgba(251, 146, 60, 0.2)', border: 'rgba(251, 146, 60, 0.3)', text: 'text-orange-400' },
+    { key: 'doing', label: 'ĐANG LÀM', value: counts.doing, icon: Hourglass, bg: 'rgba(168, 85, 247, 0.1)', iconBg: 'rgba(168, 85, 247, 0.2)', border: 'rgba(168, 85, 247, 0.3)', text: 'text-purple-400' },
+    { key: 'done', label: 'HOÀN THÀNH', value: counts.done, icon: CheckCircle2, bg: 'rgba(52, 211, 153, 0.1)', iconBg: 'rgba(52, 211, 153, 0.2)', border: 'rgba(52, 211, 153, 0.3)', text: 'text-emerald-400' },
+    { key: 'overdue', label: 'QUÁ HẠN', value: counts.overdue, icon: XCircle, bg: 'rgba(248, 113, 113, 0.1)', iconBg: 'rgba(248, 113, 113, 0.2)', border: 'rgba(248, 113, 113, 0.3)', text: 'text-red-400' },
   ]
 
   const filtered = useMemo(() => tasks.filter((t) => {
@@ -124,41 +116,53 @@ export default function Checklist() {
   const openEdit = (t) => { setEditing(t); setPanelOpen(true) }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-display text-foreground md:text-3xl">Checklist Setup</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Theo dõi các công việc chuẩn bị mở quán</p>
+          <h1 className="text-3xl font-bold text-foreground">Checklist</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">Theo dõi các công việc chuẩn bị mở quán</p>
         </div>
-        <Button onClick={openAdd}><Plus className="h-4 w-4" /> Thêm công việc</Button>
+        <Button onClick={openAdd} className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40">
+          <Plus className="h-4 w-4" /> Thêm công việc
+        </Button>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-        {STAT_CARDS.map((s) => {
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+        {STAT_CARDS.map((s, i) => {
           const Icon = s.icon
-          const t = cardTone[s.tone]
           const isActive = tab === s.key
           return (
-            <button
+            <motion.button
               key={s.key}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: i * 0.05 }}
               onClick={() => setTab(s.key)}
               className={cn(
-                'relative overflow-hidden rounded-2xl border bg-gradient-to-br to-transparent p-5 text-left card-glow transition-all hover:-translate-y-0.5',
-                t.grad, t.ring, isActive && t.active
+                'relative overflow-hidden rounded-2xl border p-5 text-left transition-all hover:scale-105',
+                isActive ? 'ring-2' : 'hover:border-white/20'
               )}
+              style={{
+                background: isActive ? s.bg : 'linear-gradient(145deg, rgba(15,30,50,0.5), rgba(10,22,40,0.7))',
+                borderColor: isActive ? s.border : 'rgba(255,255,255,0.1)',
+                ringColor: s.border,
+              }}
             >
-              <div className="flex items-center gap-4">
-                <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg', t.tile)}>
-                  <Icon className="h-6 w-6" />
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+                  style={{ background: s.iconBg }}
+                >
+                  <Icon className={cn('h-6 w-6', s.text)} />
                 </div>
-                <div className="min-w-0">
-                  <div className={cn('text-xs font-semibold uppercase tracking-wider', t.text)}>{s.label}</div>
-                  <div className="mt-1 text-3xl font-bold text-foreground">{s.value}</div>
-                  <div className="text-xs text-muted-foreground">công việc</div>
+                <div>
+                  <div className={cn('text-[10px] font-semibold uppercase tracking-wider', s.text)}>{s.label}</div>
+                  <div className="mt-1 text-2xl font-bold text-foreground">{s.value}</div>
+                  <div className="text-[10px] text-gray-500">công việc</div>
                 </div>
               </div>
-            </button>
+            </motion.button>
           )
         })}
       </div>
@@ -166,19 +170,28 @@ export default function Checklist() {
       {/* Toolbar */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1 lg:max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm công việc..." className="pl-9" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm kiếm công việc..."
+            className="rounded-xl border-white/10 bg-white/5 pl-10 backdrop-blur-sm focus:border-blue-500/50 focus:bg-white/10"
+          />
         </div>
         <div className="flex flex-wrap gap-2">
           <Select value={dept} onValueChange={setDept}>
-            <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[170px] rounded-xl border-white/10 bg-white/5">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả hạng mục</SelectItem>
               {DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={priority} onValueChange={setPriority}>
-            <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[150px] rounded-xl border-white/10 bg-white/5">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả ưu tiên</SelectItem>
               <SelectItem value="high">Cao</SelectItem>
@@ -186,25 +199,29 @@ export default function Checklist() {
               <SelectItem value="low">Thấp</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="secondary" onClick={() => { setTab('all'); setDept('all'); setPriority('all'); setQuery('') }}>
+          <Button
+            variant="secondary"
+            onClick={() => { setTab('all'); setDept('all'); setPriority('all'); setQuery('') }}
+            className="gap-2 rounded-xl border-white/10 bg-white/5 hover:bg-white/10"
+          >
             <SlidersHorizontal className="h-4 w-4" /> Bộ lọc
           </Button>
         </div>
       </div>
 
       {/* Table */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-2xl border border-white/10" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] text-sm">
             <thead>
-              <tr className="border-b border-border bg-secondary/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b border-white/10 text-left text-xs uppercase tracking-wider text-gray-400" style={{ background: 'rgba(255,255,255,0.02)' }}>
                 <th className="w-12 p-4"></th>
-                <th className="p-4 font-semibold">Công việc</th>
-                <th className="p-4 font-semibold">Hạng mục</th>
-                <th className="p-4 font-semibold">Người phụ trách</th>
-                <th className="p-4 font-semibold">Deadline</th>
-                <th className="p-4 font-semibold">Ưu tiên</th>
-                <th className="p-4 font-semibold">Trạng thái</th>
+                <th className="p-4 font-semibold">CÔNG VIỆC</th>
+                <th className="p-4 font-semibold">HẠNG MỤC</th>
+                <th className="p-4 font-semibold">NGƯỜI PHỤ TRÁCH</th>
+                <th className="p-4 font-semibold">DEADLINE</th>
+                <th className="p-4 font-semibold">ƯU TIÊN</th>
+                <th className="p-4 font-semibold">TRẠNG THÁI</th>
                 <th className="w-20 p-4 text-right"><Settings2 className="ml-auto h-4 w-4" /></th>
               </tr>
             </thead>
@@ -217,35 +234,44 @@ export default function Checklist() {
                 const d = DEPT[t.dept] || {}
                 const DeptIcon = d.icon
                 return (
-                  <tr key={t.id} className="border-b border-border/60 transition-colors last:border-0 hover:bg-secondary/30">
+                  <tr key={t.id} className="border-b border-white/5 transition-all last:border-0 hover:bg-white/5">
                     <td className="p-4">
                       <input
                         type="checkbox"
                         checked={t.status === 'done'}
                         onChange={(e) => patch(t.id, { status: e.target.checked ? 'done' : 'todo' })}
-                        className="h-4 w-4 cursor-pointer accent-[hsl(221_83%_53%)]"
+                        className="h-4 w-4 cursor-pointer rounded accent-blue-500"
                       />
                     </td>
                     <td className="p-4">
-                      <span className={cn('font-medium text-foreground', t.status === 'done' && 'text-muted-foreground line-through')}>{t.title}</span>
+                      <span className={cn('font-medium text-foreground', t.status === 'done' && 'text-gray-500 line-through')}>{t.title}</span>
                     </td>
                     <td className="p-4">
-                      <span className="inline-flex items-center gap-2 text-foreground">
-                        {DeptIcon && (
-                          <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: `${d.color.replace(')', ' / 0.15)')}`, color: d.color }}>
-                            <DeptIcon className="h-4 w-4" />
-                          </span>
-                        )}
-                        {t.dept || '—'}
-                      </span>
+                      {t.dept ? (
+                        <span className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold" style={{ background: `${d.color}20`, color: d.color }}>
+                          {DeptIcon && <DeptIcon className="h-3.5 w-3.5" />}
+                          {t.dept}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500">—</span>
+                      )}
                     </td>
                     <td className="p-4">
-                      <span className="inline-flex items-center gap-2 text-foreground">
-                        {t.assignee ? (<><Avatar className="h-7 w-7"><AvatarFallback className="text-[11px]">{t.assignee.charAt(0)}</AvatarFallback></Avatar>{t.assignee}</>) : <span className="text-muted-foreground">Chưa giao</span>}
-                      </span>
+                      {t.assignee ? (
+                        <span className="inline-flex items-center gap-2">
+                          <Avatar className="h-7 w-7">
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-[11px] font-semibold text-white">
+                              {t.assignee.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-foreground">{t.assignee}</span>
+                        </span>
+                      ) : (
+                        <span className="text-gray-500">Chưa giao</span>
+                      )}
                     </td>
                     <td className="p-4">
-                      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <span className="inline-flex items-center gap-1.5 text-gray-400">
                         <Calendar className="h-3.5 w-3.5" /> {fmtDate(t.deadline)}
                       </span>
                     </td>
@@ -257,8 +283,24 @@ export default function Checklist() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Chỉnh sửa" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" title="Xóa" onClick={() => setConfirmDel(t)}><Trash2 className="h-4 w-4" /></Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg hover:bg-white/10"
+                          title="Chỉnh sửa"
+                          onClick={() => openEdit(t)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg text-gray-400 hover:bg-red-500/10 hover:text-red-400"
+                          title="Xóa"
+                          onClick={() => setConfirmDel(t)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -272,13 +314,13 @@ export default function Checklist() {
         </div>
       </Card>
 
-      {!loading && !error && <div className="text-sm text-muted-foreground">Hiển thị {filtered.length} / {counts.all} công việc</div>}
+      {!loading && !error && <div className="text-sm text-gray-400">Hiển thị {filtered.length} / {counts.all} công việc</div>}
 
       <TaskPanel open={panelOpen} task={editing} assignees={assignees} saving={saving} onClose={() => !saving && (setPanelOpen(false), setEditing(null))} onSave={handleSave} />
       <ConfirmDialog
         open={!!confirmDel}
         title="Xóa công việc?"
-        message={confirmDel ? `Bạn có chắc muốn xóa “${confirmDel.title}”?` : ''}
+        message={confirmDel ? `Bạn có chắc muốn xóa "${confirmDel.title}"?` : ''}
         loading={deleting}
         onClose={() => setConfirmDel(null)}
         onConfirm={handleDelete}
@@ -289,8 +331,8 @@ export default function Checklist() {
 
 function PanelLabel({ children, required }) {
   return (
-    <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-      {children}{required && <span className="text-destructive"> *</span>}
+    <label className="mb-1.5 block text-xs font-medium text-gray-400">
+      {children}{required && <span className="text-red-400"> *</span>}
     </label>
   )
 }
@@ -308,43 +350,62 @@ function TaskPanel({ open, task, assignees, saving, onClose, onSave }) {
       {open && (
         <>
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm"
           />
           <motion.aside
-            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 380, damping: 40 }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[440px] flex-col border-l border-border bg-card shadow-2xl"
+            initial={{ x: '100%', opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '100%', opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[500px] flex-col overflow-hidden rounded-l-3xl border-l border-white/10 shadow-2xl"
+            style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.98), rgba(10,22,40,0.98))' }}
           >
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <h2 className="font-display text-xl text-foreground">{draft.id ? 'Chỉnh sửa công việc' : 'Thêm công việc'}</h2>
-              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Đóng"><X className="h-5 w-5" /></Button>
+            <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+              <h2 className="text-xl font-bold text-foreground">{draft.id ? 'Chỉnh sửa công việc' : 'Thêm công việc'}</h2>
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Đóng" className="rounded-xl hover:bg-white/10">
+                <X className="h-5 w-5" />
+              </Button>
             </div>
 
-            <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+            <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
               <div>
                 <PanelLabel required>Tên công việc</PanelLabel>
-                <Input placeholder="Nhập tên công việc" value={draft.title} onChange={(e) => set('title', e.target.value)} />
+                <Input
+                  placeholder="Nhập tên công việc"
+                  value={draft.title}
+                  onChange={(e) => set('title', e.target.value)}
+                  className="rounded-xl border-white/10 bg-white/5 focus:border-blue-500/50 focus:bg-white/10"
+                />
               </div>
               <div>
                 <PanelLabel>Mô tả công việc</PanelLabel>
                 <textarea
-                  rows={3} placeholder="Nhập mô tả chi tiết công việc..." value={draft.description || ''} onChange={(e) => set('description', e.target.value)}
-                  className="flex w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  rows={3}
+                  placeholder="Nhập mô tả chi tiết công việc..."
+                  value={draft.description || ''}
+                  onChange={(e) => set('description', e.target.value)}
+                  className="flex w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-foreground transition-all placeholder:text-gray-500 focus:border-blue-500/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
               <div>
                 <PanelLabel>Hạng mục</PanelLabel>
                 <Select value={draft.dept || undefined} onValueChange={(v) => set('dept', v)}>
-                  <SelectTrigger><SelectValue placeholder="Chọn hạng mục" /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
+                    <SelectValue placeholder="Chọn hạng mục" />
+                  </SelectTrigger>
                   <SelectContent>{DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <PanelLabel>Người phụ trách</PanelLabel>
                 <Select value={draft.assignee || undefined} onValueChange={(v) => set('assignee', v)}>
-                  <SelectTrigger><SelectValue placeholder="Chọn người phụ trách" /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
+                    <SelectValue placeholder="Chọn người phụ trách" />
+                  </SelectTrigger>
                   <SelectContent>{assignees.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
@@ -352,14 +413,21 @@ function TaskPanel({ open, task, assignees, saving, onClose, onSave }) {
                 <div>
                   <PanelLabel>Deadline</PanelLabel>
                   <div className="relative">
-                    <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input type="date" className="pl-9" value={draft.deadline || ''} onChange={(e) => set('deadline', e.target.value)} />
+                    <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <Input
+                      type="date"
+                      className="rounded-xl border-white/10 bg-white/5 pl-10"
+                      value={draft.deadline || ''}
+                      onChange={(e) => set('deadline', e.target.value)}
+                    />
                   </div>
                 </div>
                 <div>
                   <PanelLabel required>Ưu tiên</PanelLabel>
                   <Select value={draft.priority} onValueChange={(v) => set('priority', v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="high">Cao</SelectItem>
                       <SelectItem value="medium">Trung bình</SelectItem>
@@ -371,7 +439,9 @@ function TaskPanel({ open, task, assignees, saving, onClose, onSave }) {
               <div>
                 <PanelLabel required>Trạng thái</PanelLabel>
                 <Select value={draft.status} onValueChange={(v) => set('status', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todo">Chưa làm</SelectItem>
                     <SelectItem value="doing">Đang làm</SelectItem>
@@ -382,9 +452,20 @@ function TaskPanel({ open, task, assignees, saving, onClose, onSave }) {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-border p-4">
-              <Button variant="secondary" onClick={onClose} disabled={saving}>Hủy</Button>
-              <Button onClick={() => valid && onSave(draft)} disabled={!valid || saving}>
+            <div className="flex justify-end gap-3 border-t border-white/10 px-6 py-4">
+              <Button
+                variant="secondary"
+                onClick={onClose}
+                disabled={saving}
+                className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10"
+              >
+                Hủy
+              </Button>
+              <Button
+                onClick={() => valid && onSave(draft)}
+                disabled={!valid || saving}
+                className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30"
+              >
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {draft.id ? 'Lưu thay đổi' : 'Lưu công việc'}
               </Button>
