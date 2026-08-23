@@ -86,33 +86,44 @@ export default function Dashboard() {
 
   const statsCards = [
     { title: 'TIẾN ĐỘ SETUP', value: `${taskStat.pct}%`, percent: taskStat.pct, sub: `${taskStat.done} / ${taskStat.total} công việc`, trend: '+5% tuần này', icon: TrendingUp, tone: 'primary' },
-    { title: 'NGÂN SÁCH', value: formatVND(budgetTotal), percent: 100, sub: 'Tổng ngân sách dự kiến', trend: '40% ngân sách', icon: Wallet, tone: 'info' },
-    { title: 'ĐÃ CHI', value: formatVND(spent), percent: Math.min(spentPct, 100), sub: `${spentPct}% ngân sách`, trend: '40% ngân sách', icon: CreditCard, tone: 'warning' },
-    { title: 'CÒN LẠI', value: formatVND(remaining), percent: Math.max(100 - spentPct, 0), sub: `${100 - spentPct}% còn lại`, trend: '60% còn lại', icon: PiggyBank, tone: 'success' },
+    { title: 'NGÂN SÁCH', value: formatVND(budgetTotal), percent: 100, sub: 'Tổng ngân sách dự kiến', trend: `${spentPct}% ngân sách`, icon: Wallet, tone: 'info' },
+    { title: 'ĐÃ CHI', value: formatVND(spent), percent: Math.min(spentPct, 100), sub: 'Đã chi tiêu', trend: `${spentPct}% ngân sách`, icon: CreditCard, tone: 'warning' },
+    { title: 'CÒN LẠI', value: formatVND(remaining), percent: Math.max(100 - spentPct, 0), sub: 'Còn lại ngân sách', trend: `${100 - spentPct}% còn lại`, icon: PiggyBank, tone: 'success' },
   ]
 
-  // Dự toán vs Thực chi theo hạng mục
+  // Dự toán vs Thực chi theo hạng mục — order theo target: Xây dựng, Thiết bị, Nội thất, Marketing, Nguyên liệu
   const revenueData = useMemo(() => {
+    const order = ['Xây dựng', 'Thiết bị', 'Nội thất', 'Marketing', 'Nguyên liệu']
     const map = {}
     for (const it of items) {
       const c = it.category || 'Khác'
-      map[c] ||= { name: c, 'Dự toán': 0, 'Thực chi': 0 }
-      map[c]['Dự toán'] += it.planned || 0
+      map[c] ||= { name: c, 'Ngân sách': 0, 'Đã chi': 0 }
+      map[c]['Ngân sách'] += it.planned || 0
     }
     const byItem = {}
     for (const t of txs) byItem[t.item_id] = (byItem[t.item_id] || 0) + (t.amount || 0)
     for (const it of items) {
       const c = it.category || 'Khác'
-      if (map[c]) map[c]['Thực chi'] += byItem[it.id] || 0
+      if (map[c]) map[c]['Đã chi'] += byItem[it.id] || 0
     }
-    return Object.values(map).map((r) => ({ name: r.name, 'Dự toán': Math.round(r['Dự toán'] / 1e6), 'Thực chi': Math.round(r['Thực chi'] / 1e6) }))
+    const arr = Object.values(map).map((r) => ({
+      name: r.name,
+      'Ngân sách': Math.round(r['Ngân sách'] / 1e6),
+      'Đã chi': Math.round(r['Đã chi'] / 1e6)
+    }))
+    return arr.sort((a, b) => {
+      const ia = order.indexOf(a.name), ib = order.indexOf(b.name)
+      if (ia >= 0 && ib >= 0) return ia - ib
+      if (ia >= 0) return -1
+      if (ib >= 0) return 1
+      return a.name.localeCompare(b.name)
+    })
   }, [items, txs])
 
   const setupProgress = useMemo(() => ([
     { name: 'Hoàn thành', value: taskStat.done, hsl: '160 84% 39%' },
     { name: 'Đang làm', value: taskStat.doing, hsl: '38 92% 50%' },
-    { name: 'Quá hạn', value: taskStat.overdue, hsl: '0 72% 58%' },
-    { name: 'Chưa làm', value: taskStat.todo, hsl: '215 20% 40%' },
+    { name: 'Chưa làm', value: taskStat.todo, hsl: '258 90% 66%' },
   ].filter((s) => s.value > 0)), [taskStat])
   const progressTotal = setupProgress.reduce((s, i) => s + i.value, 0)
 
@@ -141,7 +152,7 @@ export default function Dashboard() {
       {/* Header với status chip */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <h1 className="text-[30px] font-bold leading-tight text-foreground">Dashboard</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">Tổng quan tiến độ và tình hình chuẩn bị mở quán</p>
         </div>
         <div className="flex items-center gap-2 rounded-full border border-muted/50 bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur-sm">
@@ -202,14 +213,14 @@ export default function Dashboard() {
       </div>
 
       {/* Charts row: Area trend + multi-ring radial */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <Card className="surface rounded-2xl lg:col-span-2 border border-muted/20">
+      <div className="grid grid-cols-1 gap-5" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(360px, .95fr)' }}>
+        <Card className="surface rounded-2xl border border-muted/20">
           <CardHeader className="flex-row items-center justify-between gap-4">
-            <CardTitle className="text-sm font-semibold">Xu hướng ngân sách theo hạng mục</CardTitle>
+            <CardTitle className="text-sm font-semibold">XU HƯỚNG NGÂN SÁCH THEO HẠNG MỤC</CardTitle>
             <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-400" />Dự toán</span>
-              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-400" />Thực chi</span>
-              <span className="hidden rounded-md border border-border/70 bg-muted/40 px-2 py-1 sm:inline text-[11px]">Triệu đ</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: 'hsl(217 91% 60%)' }} /> Ngân sách</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: 'hsl(160 84% 39%)' }} /> Đã chi</span>
+              <span className="hidden rounded-md border border-border/70 bg-muted/40 px-2 py-1 sm:inline text-[11px]">Đơn vị: Triệu đồng</span>
             </div>
           </CardHeader>
           <CardContent>
@@ -232,8 +243,8 @@ export default function Dashboard() {
                   <XAxis dataKey="name" stroke="hsl(215 20% 50%)" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="hsl(215 20% 50%)" fontSize={11} tickLine={false} axisLine={false} unit="M" />
                   <Tooltip {...chartTooltip} cursor={{ stroke: 'hsl(217 91% 60% / 0.25)', strokeDasharray: '4 4' }} formatter={(v) => `${v}M`} />
-                  <Area type="monotone" dataKey="Dự toán" stroke="hsl(217 91% 60%)" strokeWidth={2.5} fill="url(#gPlan)" dot={false} activeDot={{ r: 5 }} />
-                  <Area type="monotone" dataKey="Thực chi" stroke="hsl(160 84% 39%)" strokeWidth={2.5} fill="url(#gActual)" dot={false} activeDot={{ r: 5 }} />
+                  <Area type="monotone" dataKey="Ngân sách" stroke="hsl(217 91% 60%)" strokeWidth={2.5} fill="url(#gPlan)" dot={false} activeDot={{ r: 5 }} />
+                  <Area type="monotone" dataKey="Đã chi" stroke="hsl(160 84% 39%)" strokeWidth={2.5} fill="url(#gActual)" dot={false} activeDot={{ r: 5 }} />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -242,7 +253,7 @@ export default function Dashboard() {
 
         <Card className="surface rounded-2xl border border-muted/20">
           <CardHeader>
-            <CardTitle className="text-sm">Tổng tiến độ công việc</CardTitle>
+            <CardTitle className="text-sm font-semibold">TỔNG TIẾN ĐỘ CÔNG VIỆC</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             {progressTotal === 0 ? (
@@ -299,15 +310,18 @@ export default function Dashboard() {
                   className="pointer-events-none absolute inset-0 opacity-50"
                   style={{ background: `radial-gradient(circle at 50% 0%, hsl(${tn.hsl} / 0.2), transparent 70%)` }}
                 />
-                <CardContent className="relative flex flex-col items-center gap-2 p-3 text-center">
+                <CardContent className="relative flex items-start gap-3 p-4">
                   <div
-                    className="flex h-9 w-9 items-center justify-center rounded-lg"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
                     style={{ background: `hsl(${tn.hsl} / 0.2)`, border: `1px solid hsl(${tn.hsl} / 0.4)` }}
                   >
                     <Icon className={cn('h-4 w-4', tn.text)} />
                   </div>
-                  <div className="text-xl font-bold text-foreground">{task.count}</div>
-                  <div className="text-[10px] font-semibold leading-tight text-muted-foreground">{task.title}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-2xl font-bold text-foreground">{task.count}</div>
+                    <div className="mt-0.5 text-xs font-semibold leading-tight text-foreground">{task.title}</div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">{task.subtitle}</div>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -316,10 +330,10 @@ export default function Dashboard() {
       </div>
 
       {/* Bottom: vertical timeline + progress monitoring panel */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2" style={{ alignItems: 'stretch' }}>
         <Card className="surface rounded-2xl border border-muted/20">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-sm font-semibold">Việc quan trọng</CardTitle>
+            <CardTitle className="text-sm font-semibold">VIỆC QUAN TRỌNG</CardTitle>
             <Link to="/checklist" className="flex items-center gap-1 text-xs text-primary hover:underline">Xem tất cả <ArrowRight className="h-3 w-3" /></Link>
           </CardHeader>
           <CardContent>
@@ -363,7 +377,7 @@ export default function Dashboard() {
 
         <Card className="surface rounded-2xl border border-muted/20">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-warning" /> Cảnh báo ngân sách</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-warning" /> CẢNH BÁO NGÂN SÁCH</CardTitle>
             <Link to="/budget" className="flex items-center gap-1 text-xs text-primary hover:underline">Xem tất cả <ArrowRight className="h-3 w-3" /></Link>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -411,4 +425,3 @@ export default function Dashboard() {
     </div>
   )
 }
-// force fresh build 1787497077

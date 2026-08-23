@@ -96,8 +96,11 @@ function SidebarContent({ onNavigate }) {
                   {isActive && (
                     <motion.span
                       layoutId="nav-active"
-                      className="absolute inset-0 -z-10 rounded-lg border border-primary/30"
-                      style={{ background: 'linear-gradient(90deg, rgba(37,99,235,.15), rgba(99,102,241,.08))' }}
+                      className="absolute inset-0 -z-10 rounded-lg border"
+                      style={{
+                        background: 'linear-gradient(90deg, rgba(37,99,235,.75), rgba(79,70,229,.45))',
+                        borderColor: 'rgba(96,165,250,.35)'
+                      }}
                       transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                     />
                   )}
@@ -324,11 +327,12 @@ export default function Layout({ children }) {
           <div className="font-sans text-base font-bold text-foreground">{pageTitles[location.pathname] || 'Quán Nướng'}</div>
 
           <div className="ml-auto flex items-center gap-2">
-            <div className="hidden items-center gap-2 rounded-lg border border-border/70 bg-secondary/40 px-3 py-2 text-sm text-muted-foreground sm:flex" style={{ background: 'rgba(218 41% 12% / 0.6)' }}>
+            <div className="hidden items-center gap-2 rounded-lg border border-border/70 px-3 py-2 text-sm text-muted-foreground sm:flex" style={{ background: 'rgba(15,23,42,.72)' }}>
               <Search className="h-4 w-4" />
               <input
                 placeholder="Tìm kiếm..."
                 className="w-32 bg-transparent text-foreground outline-none placeholder:text-muted-foreground md:w-48"
+                style={{ outline: 'none' }}
               />
             </div>
             <Button variant="ghost" size="sm" className="hidden text-xs text-muted-foreground md:inline-flex hover:text-foreground">
