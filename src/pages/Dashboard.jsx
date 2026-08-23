@@ -151,7 +151,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards Bento Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {statsCards.map((stat, i) => {
           const Icon = stat.icon
           const tn = TONE[stat.tone]
@@ -173,25 +173,25 @@ export default function Dashboard() {
                   className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
                   style={{ background: `linear-gradient(90deg, transparent, hsl(${tn.hsl} / 0.4), transparent)` }}
                 />
-                <CardContent className="relative p-6">
-                  <div className="flex items-start gap-4">
+                <CardContent className="relative p-4">
+                  <div className="flex items-start gap-3">
                     {/* Icon + mini info bên trái */}
                     <div className="flex flex-col items-start gap-1">
                       <div
-                        className="flex h-11 w-11 items-center justify-center rounded-lg"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg"
                         style={{ background: `hsl(${tn.hsl} / 0.18)`, border: `1px solid hsl(${tn.hsl} / 0.35)` }}
                       >
-                        <Icon className={cn('h-5 w-5', tn.text)} />
+                        <Icon className={cn('h-4 w-4', tn.text)} />
                       </div>
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/80">{stat.title}</span>
+                      <span className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground/80">{stat.title}</span>
                     </div>
                     {/* Value ở giữa */}
                     <div className="flex-1 min-w-0">
-                      <div className="truncate text-xl font-bold text-foreground">{stat.value}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">{stat.sub}</div>
+                      <div className="truncate text-lg font-bold text-foreground">{stat.value}</div>
+                      <div className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2">{stat.sub}</div>
                     </div>
                     {/* Mini ring bên phải */}
-                    <div className="relative h-14 w-14 shrink-0">
+                    <div className="relative h-12 w-12 shrink-0">
                       <MiniRing percent={stat.percent} hsl={tn.hsl} />
                     </div>
                   </div>
@@ -284,7 +284,7 @@ export default function Dashboard() {
       </div>
 
       {/* Urgent stat pills */}
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {urgentTasks.map((task) => {
           const Icon = task.icon
           const tn = TONE[task.tone]
@@ -300,15 +300,15 @@ export default function Dashboard() {
                   className="pointer-events-none absolute inset-0 opacity-50"
                   style={{ background: `radial-gradient(circle at 50% 0%, hsl(${tn.hsl} / 0.2), transparent 70%)` }}
                 />
-                <CardContent className="relative flex flex-col items-center gap-2.5 p-4 text-center">
+                <CardContent className="relative flex flex-col items-center gap-2 p-3 text-center">
                   <div
-                    className="flex h-10 w-10 items-center justify-center rounded-lg"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg"
                     style={{ background: `hsl(${tn.hsl} / 0.2)`, border: `1px solid hsl(${tn.hsl} / 0.4)` }}
                   >
-                    <Icon className={cn('h-5 w-5', tn.text)} />
+                    <Icon className={cn('h-4 w-4', tn.text)} />
                   </div>
-                  <div className="text-2xl font-bold text-foreground">{task.count}</div>
-                  <div className="text-[11px] font-semibold leading-tight text-muted-foreground">{task.title}</div>
+                  <div className="text-xl font-bold text-foreground">{task.count}</div>
+                  <div className="text-[10px] font-semibold leading-tight text-muted-foreground">{task.title}</div>
                 </CardContent>
               </Card>
             </motion.div>
