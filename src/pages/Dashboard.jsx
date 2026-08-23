@@ -176,7 +176,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards Bento Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat, i) => {
           const Icon = stat.icon
           const tn = TONE[stat.tone]
@@ -227,7 +227,7 @@ export default function Dashboard() {
       </div>
 
       {/* Charts row: Area trend + multi-ring radial */}
-      <div className="grid grid-cols-1 gap-5" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(360px, .95fr)' }}>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card className="surface rounded-2xl border border-muted/20">
           <CardHeader className="flex-row items-center justify-between gap-4">
             <CardTitle className="text-sm font-semibold">XU HƯỚNG NGÂN SÁCH THEO HẠNG MỤC</CardTitle>
