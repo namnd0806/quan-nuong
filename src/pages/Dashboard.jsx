@@ -85,10 +85,10 @@ export default function Dashboard() {
   }, [items, txs])
 
   const statsCards = [
-    { title: 'TIẾN ĐỘ SETUP', value: `${taskStat.pct}%`, percent: taskStat.pct, sub: `${taskStat.done} / ${taskStat.total} công việc`, icon: TrendingUp, tone: 'primary' },
-    { title: 'NGÂN SÁCH', value: formatVND(budgetTotal), percent: 100, sub: 'Tổng ngân sách dự kiến', icon: Wallet, tone: 'info' },
-    { title: 'ĐÃ CHI', value: formatVND(spent), percent: Math.min(spentPct, 100), sub: `${spentPct}% ngân sách`, icon: CreditCard, tone: 'warning' },
-    { title: 'CÒN LẠI', value: formatVND(remaining), percent: Math.max(100 - spentPct, 0), sub: `${100 - spentPct}% còn lại`, icon: PiggyBank, tone: 'success' },
+    { title: 'TIẾN ĐỘ SETUP', value: `${taskStat.pct}%`, percent: taskStat.pct, sub: `${taskStat.done} / ${taskStat.total} công việc`, trend: '+5% tuần này', icon: TrendingUp, tone: 'primary' },
+    { title: 'NGÂN SÁCH', value: formatVND(budgetTotal), percent: 100, sub: 'Tổng ngân sách dự kiến', trend: `${spentPct}% ngân sách`, icon: Wallet, tone: 'info' },
+    { title: 'ĐÃ CHI', value: formatVND(spent), percent: Math.min(spentPct, 100), sub: `${spentPct}% ngân sách`, trend: `${spentPct}% ngân sách`, icon: CreditCard, tone: 'warning' },
+    { title: 'CÒN LẠI', value: formatVND(remaining), percent: Math.max(100 - spentPct, 0), sub: `${100 - spentPct}% còn lại`, trend: `${100 - spentPct}% còn lại`, icon: PiggyBank, tone: 'success' },
   ]
 
   // Dự toán vs Thực chi theo hạng mục
@@ -173,28 +173,34 @@ export default function Dashboard() {
                   className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
                   style={{ background: `linear-gradient(90deg, transparent, hsl(${tn.hsl} / 0.4), transparent)` }}
                 />
-                <CardContent className="relative p-4">
-                  <div className="flex items-start gap-3">
+                <CardContent className="relative p-3">
+                  <div className="flex items-start gap-2.5">
                     {/* Icon + mini info bên trái */}
                     <div className="flex flex-col items-start gap-1">
                       <div
-                        className="flex h-10 w-10 items-center justify-center rounded-lg"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg"
                         style={{ background: `hsl(${tn.hsl} / 0.18)`, border: `1px solid hsl(${tn.hsl} / 0.35)` }}
                       >
-                        <Icon className={cn('h-4 w-4', tn.text)} />
+                        <Icon className={cn('h-3.5 w-3.5', tn.text)} />
                       </div>
-                      <span className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground/80">{stat.title}</span>
+                      <span className="text-[6px] font-bold uppercase tracking-widest text-muted-foreground/70">{stat.title}</span>
                     </div>
                     {/* Value ở giữa */}
                     <div className="flex-1 min-w-0">
-                      <div className="truncate text-lg font-bold text-foreground">{stat.value}</div>
-                      <div className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2">{stat.sub}</div>
+                      <div className="truncate text-base font-bold text-foreground">{stat.value}</div>
+                      <div className="mt-0.5 text-[10px] text-muted-foreground line-clamp-2">{stat.sub}</div>
                     </div>
                     {/* Mini ring bên phải */}
-                    <div className="relative h-12 w-12 shrink-0">
+                    <div className="relative h-10 w-10 shrink-0">
                       <MiniRing percent={stat.percent} hsl={tn.hsl} />
                     </div>
                   </div>
+                  {/* Trend indicator dưới */}
+                  {stat.trend && (
+                    <div className="mt-2 text-[10px] font-medium" style={{ color: `hsl(${TONE.success.hsl})` }}>
+                      {stat.trend}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
