@@ -1,0 +1,42 @@
+export const NOTIFICATIONS = [
+  {
+    id: 1,
+    user: 'Nam',
+    action: 'đã hoàn thành',
+    target: 'Lắp hệ thống hút khói',
+    time: '5 phút trước',
+    type: 'done',
+  },
+  {
+    id: 2,
+    user: 'Bảo',
+    action: 'đổi trạng thái',
+    target: 'Sơn tường → Đang làm',
+    time: '32 phút trước',
+    type: 'update',
+  },
+  {
+    id: 3,
+    user: 'Nam',
+    action: 'thêm khoản chi',
+    target: 'Máy hút khói — 12.000.000đ',
+    time: '1 giờ trước',
+    type: 'budget',
+  },
+  {
+    id: 4,
+    user: 'Bảo',
+    action: 'thêm nhà cung cấp',
+    target: 'Rau Sạch Xanh',
+    time: '2 giờ trước',
+    type: 'supplier',
+  },
+  {
+    id: 5,
+    user: 'Nam',
+    action: 'cập nhật ưu tiên',
+    target: 'Lắp đặt điện nước → Cao',
+    time: 'Hôm qua, 16:20',
+    type: 'update',
+  },
+]
