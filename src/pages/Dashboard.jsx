@@ -8,6 +8,7 @@ import {
 import {
   TrendingUp, Wallet, CreditCard, PiggyBank, AlertTriangle,
   Loader2, CheckCircle2, ListTodo, ArrowRight, Clock,
+  Circle, Wrench, UtensilsCrossed, Snowflake,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCollection } from '@/hooks/useCollection'
@@ -31,6 +32,19 @@ const chartTooltip = {
 function fmtDay(iso) {
   if (!iso) return '—'
   try { return new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) } catch { return '—' }
+}
+
+function getTaskIcon(title) {
+  const map = {
+    'nền': Circle,
+    'hút': Wrench,
+    'nướng': UtensilsCrossed,
+    'đông': Snowflake,
+  }
+  for (const [key, icon] of Object.entries(map)) {
+    if (title.toLowerCase().includes(key)) return icon
+  }
+  return ListTodo
 }
 
 // Vòng tròn tiến độ nhỏ (SVG) cho các thẻ Bento
@@ -294,7 +308,7 @@ export default function Dashboard() {
       </div>
 
       {/* Urgent stat pills */}
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {urgentTasks.map((task) => {
           const Icon = task.icon
           const tn = TONE[task.tone]
@@ -305,22 +319,24 @@ export default function Dashboard() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="surface group relative overflow-hidden rounded-xl transition-all duration-200 border border-muted/20 hover:border-muted/40">
+              <Card className="surface group relative overflow-hidden rounded-2xl transition-all duration-200 border border-muted/20 hover:border-muted/30">
                 <div
-                  className="pointer-events-none absolute inset-0 opacity-50"
-                  style={{ background: `radial-gradient(circle at 50% 0%, hsl(${tn.hsl} / 0.2), transparent 70%)` }}
+                  className="pointer-events-none absolute inset-0 opacity-40"
+                  style={{ background: `radial-gradient(circle at 50% 0%, hsl(${tn.hsl} / 0.25), transparent 75%)` }}
                 />
-                <CardContent className="relative flex items-start gap-3 p-4">
-                  <div
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                    style={{ background: `hsl(${tn.hsl} / 0.2)`, border: `1px solid hsl(${tn.hsl} / 0.4)` }}
-                  >
-                    <Icon className={cn('h-4 w-4', tn.text)} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-2xl font-bold text-foreground">{task.count}</div>
-                    <div className="mt-0.5 text-xs font-semibold leading-tight text-foreground">{task.title}</div>
-                    <div className="mt-0.5 text-[11px] text-muted-foreground">{task.subtitle}</div>
+                <CardContent className="relative p-5">
+                  <div className="flex flex-col gap-4">
+                    <div
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+                      style={{ background: `hsl(${tn.hsl} / 0.2)`, border: `1.5px solid hsl(${tn.hsl} / 0.5)` }}
+                    >
+                      <Icon className={cn('h-6 w-6', tn.text)} />
+                    </div>
+                    <div>
+                      <div className="text-3xl font-bold text-foreground">{task.count}</div>
+                      <div className="mt-1 text-xs font-semibold leading-tight text-foreground">{task.title}</div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">{task.subtitle}</div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -346,6 +362,7 @@ export default function Dashboard() {
                 {todoItems.map((item, idx) => {
                   const tone = item.status === 'overdue' ? 'destructive' : item.status === 'doing' ? 'warning' : 'info'
                   const tn = TONE[tone]
+                  const TaskIcon = getTaskIcon(item.title)
                   return (
                     <motion.li
                       key={item.id}
@@ -355,9 +372,11 @@ export default function Dashboard() {
                       transition={{ duration: 0.35, delay: idx * 0.05 }}
                     >
                       <span
-                        className="absolute -left-[15px] top-1 h-5 w-5 rounded-full ring-4 ring-background transition-all duration-300 hover:scale-110"
+                        className="absolute -left-[15px] top-1 h-5 w-5 rounded-full ring-4 ring-background transition-all duration-300 hover:scale-110 flex items-center justify-center"
                         style={{ background: `hsl(${tn.hsl})`, boxShadow: `0 0 12px hsl(${tn.hsl} / 0.4)` }}
-                      />
+                      >
+                        <TaskIcon className="h-2.5 w-2.5 text-background" />
+                      </span>
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-sm font-medium text-foreground">{item.title}</span>
                         <span
