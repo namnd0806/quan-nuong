@@ -324,18 +324,18 @@ export default function Dashboard() {
                   className="pointer-events-none absolute inset-0 opacity-40"
                   style={{ background: `radial-gradient(circle at 50% 0%, hsl(${tn.hsl} / 0.25), transparent 75%)` }}
                 />
-                <CardContent className="relative p-5">
-                  <div className="flex flex-col gap-4">
+                <CardContent className="relative p-4">
+                  <div className="flex items-center gap-4">
                     <div
-                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
                       style={{ background: `hsl(${tn.hsl} / 0.2)`, border: `1.5px solid hsl(${tn.hsl} / 0.5)` }}
                     >
-                      <Icon className={cn('h-6 w-6', tn.text)} />
+                      <Icon className={cn('h-5 w-5', tn.text)} />
                     </div>
-                    <div>
-                      <div className="text-3xl font-bold text-foreground">{task.count}</div>
-                      <div className="mt-1 text-xs font-semibold leading-tight text-foreground">{task.title}</div>
-                      <div className="mt-1 text-[11px] text-muted-foreground">{task.subtitle}</div>
+                    <div className="flex-1">
+                      <div className="text-2xl font-bold text-foreground">{task.count}</div>
+                      <div className="text-xs font-semibold leading-tight text-foreground">{task.title}</div>
+                      <div className="text-[10px] text-muted-foreground">{task.subtitle}</div>
                     </div>
                   </div>
                 </CardContent>
