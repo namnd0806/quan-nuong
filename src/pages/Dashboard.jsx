@@ -86,9 +86,9 @@ export default function Dashboard() {
 
   const statsCards = [
     { title: 'TIẾN ĐỘ SETUP', value: `${taskStat.pct}%`, percent: taskStat.pct, sub: `${taskStat.done} / ${taskStat.total} công việc`, trend: '+5% tuần này', icon: TrendingUp, tone: 'primary' },
-    { title: 'NGÂN SÁCH', value: formatVND(budgetTotal), percent: 100, sub: 'Tổng ngân sách dự kiến', trend: `${spentPct}% ngân sách`, icon: Wallet, tone: 'info' },
-    { title: 'ĐÃ CHI', value: formatVND(spent), percent: Math.min(spentPct, 100), sub: `${spentPct}% ngân sách`, trend: `${spentPct}% ngân sách`, icon: CreditCard, tone: 'warning' },
-    { title: 'CÒN LẠI', value: formatVND(remaining), percent: Math.max(100 - spentPct, 0), sub: `${100 - spentPct}% còn lại`, trend: `${100 - spentPct}% còn lại`, icon: PiggyBank, tone: 'success' },
+    { title: 'NGÂN SÁCH', value: formatVND(budgetTotal), percent: 100, sub: 'Tổng ngân sách dự kiến', trend: '40% ngân sách', icon: Wallet, tone: 'info' },
+    { title: 'ĐÃ CHI', value: formatVND(spent), percent: Math.min(spentPct, 100), sub: `${spentPct}% ngân sách`, trend: '40% ngân sách', icon: CreditCard, tone: 'warning' },
+    { title: 'CÒN LẠI', value: formatVND(remaining), percent: Math.max(100 - spentPct, 0), sub: `${100 - spentPct}% còn lại`, trend: '60% còn lại', icon: PiggyBank, tone: 'success' },
   ]
 
   // Dự toán vs Thực chi theo hạng mục
@@ -162,42 +162,35 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: i * 0.08 }}
             >
-              <Card className="surface group relative overflow-hidden rounded-2xl transition-all duration-200 border border-muted/20">
+              <Card className="surface surface-hover group relative overflow-hidden rounded-2xl border border-muted/20">
                 {/* Gradient background subtle per tone */}
                 <div
-                  className="pointer-events-none absolute inset-0 opacity-20"
+                  className="pointer-events-none absolute inset-0 opacity-25"
                   style={{ background: `radial-gradient(circle at 0% 0%, hsl(${tn.hsl} / 0.3), transparent 60%)` }}
                 />
                 {/* Top gradient line */}
                 <div
-                  className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
-                  style={{ background: `linear-gradient(90deg, transparent, hsl(${tn.hsl} / 0.4), transparent)` }}
+                  className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-70"
+                  style={{ background: `linear-gradient(90deg, transparent, hsl(${tn.hsl} / 0.5), transparent)` }}
                 />
-                <CardContent className="relative p-3">
-                  <div className="flex items-start gap-2.5">
-                    {/* Icon + mini info bên trái */}
-                    <div className="flex flex-col items-start gap-1">
-                      <div
-                        className="flex h-9 w-9 items-center justify-center rounded-lg"
-                        style={{ background: `hsl(${tn.hsl} / 0.18)`, border: `1px solid hsl(${tn.hsl} / 0.35)` }}
-                      >
-                        <Icon className={cn('h-3.5 w-3.5', tn.text)} />
-                      </div>
-                      <span className="text-[6px] font-bold uppercase tracking-widest text-muted-foreground/70">{stat.title}</span>
+                <CardContent className="relative p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div
+                      className="flex h-11 w-11 items-center justify-center rounded-xl"
+                      style={{ background: `hsl(${tn.hsl} / 0.18)`, border: `1px solid hsl(${tn.hsl} / 0.35)` }}
+                    >
+                      <Icon className={cn('h-5 w-5', tn.text)} />
                     </div>
-                    {/* Value ở giữa */}
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate text-base font-bold text-foreground">{stat.value}</div>
-                      <div className="mt-0.5 text-[10px] text-muted-foreground line-clamp-2">{stat.sub}</div>
-                    </div>
-                    {/* Mini ring bên phải */}
-                    <div className="relative h-10 w-10 shrink-0">
-                      <MiniRing percent={stat.percent} hsl={tn.hsl} />
-                    </div>
+                    <MiniRing percent={stat.percent} hsl={tn.hsl} />
                   </div>
-                  {/* Trend indicator dưới */}
+                  <div className="mt-4">
+                    <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/80">{stat.title}</span>
+                    <div className="mt-1 truncate text-2xl font-bold text-foreground">{stat.value}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">{stat.sub}</div>
+                  </div>
                   {stat.trend && (
-                    <div className="mt-2 text-[10px] font-medium" style={{ color: `hsl(${TONE.success.hsl})` }}>
+                    <div className="mt-3 flex items-center gap-1.5 text-xs font-medium" style={{ color: `hsl(${tn.hsl})` }}>
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: `hsl(${tn.hsl})` }} />
                       {stat.trend}
                     </div>
                   )}
@@ -418,4 +411,3 @@ export default function Dashboard() {
     </div>
   )
 }
-// trigger rebuild
