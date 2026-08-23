@@ -11,6 +11,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { BadgeSelect } from '@/components/ui/badge-select'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
+import { ImageFrame } from '@/components/ui/image-upload'
+import { useToast } from '@/components/ui/toast'
 import SupplierFormPanel from '@/components/SupplierFormPanel'
 import SupplierDetailPanel from '@/components/SupplierDetailPanel'
 import { useCollection } from '@/hooks/useCollection'
@@ -39,7 +41,8 @@ function fmtDate(iso) {
 }
 
 export default function Suppliers() {
-  const { rows: suppliers, loading, error, create, update, remove } = useCollection('suppliers')
+  const toast = useToast()
+  const { rows: suppliers, loading, error, create, update, remove } = useCollection('suppliers', { notify: { label: 'nhà cung cấp', type: 'supplier' } })
   const { rows: products, refetch: refetchProducts } = useCollection('supplier_products', { orderBy: 'created_at', ascending: true })
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
@@ -104,15 +107,20 @@ export default function Suppliers() {
       }
       await refetchProducts()
       setAddOpen(false); setEditItem(null)
+      toast.success(id ? `Đã cập nhật “${values.name}”.` : `Đã thêm nhà cung cấp “${values.name}”.`)
     } catch (e) {
-      alert('Lưu nhà cung cấp thất bại: ' + e.message)
+      toast.error('Lưu nhà cung cấp thất bại: ' + e.message)
     } finally { setSaving(false) }
   }
 
   const handleDelete = async () => {
     setDeleting(true)
-    try { await remove(confirmDel.id); setConfirmDel(null) }
-    catch (e) { alert('Xóa thất bại: ' + e.message) }
+    try {
+      const name = confirmDel?.name
+      await remove(confirmDel.id); setConfirmDel(null)
+      toast.success(`Đã xóa “${name}”.`)
+    }
+    catch (e) { toast.error('Xóa thất bại: ' + e.message) }
     finally { setDeleting(false) }
   }
 
@@ -209,7 +217,11 @@ export default function Suppliers() {
                 <tr key={s.id} className="border-b border-border/60 transition-colors last:border-0 hover:bg-secondary/30">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10 rounded-xl"><AvatarFallback className="rounded-xl">{s.name.charAt(0)}</AvatarFallback></Avatar>
+                      {s.logo_url ? (
+                        <ImageFrame src={s.logo_url} size="h-10 w-10" rounded="rounded-xl" />
+                      ) : (
+                        <Avatar className="h-10 w-10 rounded-xl"><AvatarFallback className="rounded-xl">{s.name.charAt(0)}</AvatarFallback></Avatar>
+                      )}
                       <div>
                         <div className="font-medium text-foreground">{s.name}</div>
                         <div className="text-xs text-muted-foreground">{s.code}</div>
@@ -230,7 +242,7 @@ export default function Suppliers() {
                     </span>
                   </td>
                   <td className="p-4">
-                    <BadgeSelect value={s.status} options={STATUS_OPTIONS} onChange={(v) => update(s.id, { status: v }).catch((e) => alert(e.message))} />
+                    <BadgeSelect value={s.status} options={STATUS_OPTIONS} onChange={(v) => update(s.id, { status: v }).catch((e) => toast.error(e.message))} />
                   </td>
                   <td className="max-w-[240px] p-4">
                     <span className="block truncate text-muted-foreground" title={s.note}>{s.note}</span>

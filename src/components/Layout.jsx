@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ClipboardCheck, Wallet, UtensilsCrossed,
   Store, Bell, Menu, X, Flame, Search, Settings, Sun, Moon,
   CheckCircle2, PencilLine, Wallet as WalletIcon, Store as StoreIcon,
-  StickyNote, LogOut, HelpCircle,
+  StickyNote, LogOut,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,6 @@ const menuItems = [
   { path: '/budget', icon: Wallet, label: 'Ngân sách' },
   { path: '/menu-cost', icon: UtensilsCrossed, label: 'Menu & Cost' },
   { path: '/suppliers', icon: Store, label: 'Nhà cung cấp' },
-  { path: '/decisions', icon: HelpCircle, label: 'Chờ quyết định' },
   { path: '/notes', icon: StickyNote, label: 'Ghi chú' },
 ]
 
@@ -32,7 +31,6 @@ const pageTitles = {
   '/budget': 'Ngân sách',
   '/menu-cost': 'Menu & Cost',
   '/suppliers': 'Nhà cung cấp',
-  '/decisions': 'Chờ quyết định',
   '/notes': 'Ghi chú',
   '/settings': 'Cài đặt',
 }
@@ -168,6 +166,11 @@ function NotificationBell() {
     await supabase.from('notifications').update({ is_read: true }).in('id', ids)
   }
 
+  const markOneRead = async (n) => {
+    if (n.is_read) return
+    await supabase.from('notifications').update({ is_read: true }).eq('id', n.id)
+  }
+
   return (
     <div className="relative">
       <Button variant="ghost" size="icon" className="relative" onClick={() => setOpen((o) => !o)}>
@@ -201,8 +204,9 @@ function NotificationBell() {
                   const meta = notifIcon[n.type] || notifIcon.update
                   const Icon = meta.icon
                   return (
-                    <div
+                    <button
                       key={n.id}
+                      onClick={() => markOneRead(n)}
                       className={cn('flex w-full items-start gap-3 border-b border-border/60 px-4 py-3 text-left transition-colors last:border-0 hover:bg-accent', !n.is_read && 'bg-primary/5')}
                     >
                       <div className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', meta.tone)}>
@@ -216,7 +220,7 @@ function NotificationBell() {
                         </p>
                         <span className="mt-0.5 block text-xs text-muted-foreground">{timeAgo(n.created_at)}</span>
                       </div>
-                    </div>
+                    </button>
                   )
                 })}
               </div>

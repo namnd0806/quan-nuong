@@ -39,30 +39,41 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
+      {/* Nền trang trí */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/20 blur-[120px]" />
+        <div className="absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-info/20 blur-[120px]" />
+        <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-warning/10 blur-[120px]" />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
         className="w-full max-w-sm"
       >
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-info shadow-lg shadow-primary/30">
-            <Flame className="h-7 w-7 text-white" />
-          </div>
-          <h1 className="mt-4 font-display text-2xl text-foreground">QUÁN NƯỚNG</h1>
-          <p className="text-sm text-muted-foreground">Hệ thống quản lý chuẩn bị mở quán</p>
+          <motion.div
+            initial={{ scale: 0.8, rotate: -8 }} animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+            className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-info shadow-xl shadow-primary/40"
+          >
+            <Flame className="h-8 w-8 text-white" />
+          </motion.div>
+          <h1 className="mt-5 font-display text-3xl tracking-tight text-foreground">QUÁN NƯỚNG</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Hệ thống quản lý chuẩn bị mở quán</p>
         </div>
 
-        <form onSubmit={submit} className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-2xl card-glow">
+        <form onSubmit={submit} className="space-y-4 rounded-2xl border border-border bg-card/80 p-6 shadow-2xl backdrop-blur card-glow">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Tài khoản</label>
-            <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="nam hoặc phuong" autoFocus autoComplete="username" />
+            <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Tên đăng nhập" autoFocus autoComplete="username" />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Mật khẩu</label>
             <div className="relative">
               <Input
                 type={show ? 'text' : 'password'} value={password}
-                onChange={(e) => setPassword(e.target.value)} placeholder="••••••" autoComplete="current-password"
+                onChange={(e) => setPassword(e.target.value)} placeholder="Nhập mật khẩu" autoComplete="current-password"
                 className="pr-10"
               />
               <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -78,8 +89,6 @@ export default function Login() {
             {busy ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </Button>
         </form>
-
-        <p className="mt-4 text-center text-xs text-muted-foreground">Dùng chung cho 2 chủ quán · Dữ liệu đồng bộ realtime</p>
       </motion.div>
     </div>
   )

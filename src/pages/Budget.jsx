@@ -16,8 +16,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import ExpenseDetailPanel from '@/components/ExpenseDetailPanel'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
+import { logNotification } from '@/lib/notify'
 import { useCollection } from '@/hooks/useCollection'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 import { formatVND, cn } from '@/lib/utils'
 
 const CAT = {
@@ -46,7 +49,9 @@ const toneMap = {
 }
 
 const chartTooltip = {
-  contentStyle: { background: 'hsl(222 40% 8%)', border: '1px solid hsl(217 33% 15%)', borderRadius: 12, color: '#fff' },
+  contentStyle: { background: 'hsl(222 47% 11%)', border: '1px solid hsl(217 33% 22%)', borderRadius: 12, color: '#f8fafc', boxShadow: '0 10px 30px rgba(0,0,0,0.4)' },
+  itemStyle: { color: '#f8fafc' },
+  labelStyle: { color: '#cbd5e1', fontWeight: 600, marginBottom: 4 },
 }
 
 function fmtDate(iso) {
@@ -55,7 +60,10 @@ function fmtDate(iso) {
 }
 
 export default function Budget() {
-  const { rows: items, loading, error, create, update, remove } = useCollection('budget_items')
+  const toast = useToast()
+  const { profile, user } = useAuth()
+  const actor = profile?.name || user?.email?.split('@')[0] || 'Ai đó'
+  const { rows: items, loading, error, create, update, remove } = useCollection('budget_items', { notify: { label: 'khoản ngân sách', type: 'budget' } })
   const { rows: txs, refetch: refetchTx } = useCollection('budget_transactions', { orderBy: 'spent_at', ascending: false })
   const { rows: members } = useCollection('members', { orderBy: 'sort', ascending: true })
   const { rows: settingsRows } = useCollection('settings', { orderBy: 'id', ascending: true, realtime: false })
@@ -146,7 +154,8 @@ export default function Budget() {
       if (draft.id) await update(draft.id, values)
       else await create(values)
       setFormOpen(false); setEditing(null)
-    } catch (e) { alert('Lưu khoản chi thất bại: ' + e.message) }
+      toast.success(draft.id ? `Đã cập nhật “${values.name}”.` : `Đã thêm khoản “${values.name}”.`)
+    } catch (e) { toast.error('Lưu khoản chi thất bại: ' + e.message) }
     finally { setSaving(false) }
   }
 
@@ -156,15 +165,22 @@ export default function Budget() {
       const { error } = await supabase.from('budget_transactions').insert({ item_id: itemId, amount: Number(amount) || 0, spent_at, note: note || null })
       if (error) throw error
       await refetchTx()
+      const item = items.find((x) => x.id === itemId)
+      logNotification({ actor, action: 'đã ghi nhận chi', target: item?.name || 'khoản ngân sách', type: 'budget' })
       setRecordFor(null)
-    } catch (e) { alert('Ghi nhận chi thất bại: ' + e.message) }
+      toast.success(`Đã ghi nhận chi ${formatVND(Number(amount) || 0)}.`)
+    } catch (e) { toast.error('Ghi nhận chi thất bại: ' + e.message) }
     finally { setSaving(false) }
   }
 
   const handleDelete = async () => {
     setDeleting(true)
-    try { await remove(confirmDel.id); setConfirmDel(null); setSelected(null) }
-    catch (e) { alert('Xóa thất bại: ' + e.message) }
+    try {
+      const name = confirmDel?.name
+      await remove(confirmDel.id); setConfirmDel(null); setSelected(null)
+      toast.success(`Đã xóa “${name}”.`)
+    }
+    catch (e) { toast.error('Xóa thất bại: ' + e.message) }
     finally { setDeleting(false) }
   }
 

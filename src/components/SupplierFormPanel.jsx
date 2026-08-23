@@ -4,6 +4,8 @@ import { X, Plus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import ImageUpload from '@/components/ui/image-upload'
+import { useToast } from '@/components/ui/toast'
 import { CATEGORIES } from '@/lib/suppliers'
 
 function Label({ children, required }) {
@@ -14,10 +16,11 @@ function Label({ children, required }) {
   )
 }
 
-const emptyForm = { name: '', code: '', email: '', address: '', tag: '', status: 'active', note: '' }
+const emptyForm = { name: '', code: '', email: '', address: '', tag: '', status: 'active', note: '', logo_url: '' }
 
 // mode: 'add' | 'edit'
 export default function SupplierFormPanel({ open, mode = 'add', initial, saving, onClose, onSave }) {
+  const toast = useToast()
   const [form, setForm] = useState(emptyForm)
   const [products, setProducts] = useState([])
   const [newProduct, setNewProduct] = useState('')
@@ -44,7 +47,8 @@ export default function SupplierFormPanel({ open, mode = 'add', initial, saving,
 
   const submit = () => {
     if (!valid || saving) return
-    onSave({ values: form, productNames: products, id: initial?.id })
+    const values = { ...form, logo_url: /^https?:\/\//.test(form.logo_url) ? form.logo_url : null }
+    onSave({ values, productNames: products, id: initial?.id })
   }
 
   return (
@@ -69,6 +73,16 @@ export default function SupplierFormPanel({ open, mode = 'add', initial, saving,
             </div>
 
             <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Logo nhà cung cấp</h3>
+              <ImageUpload
+                value={form.logo_url}
+                onChange={(v) => set('logo_url', v)}
+                folder="suppliers"
+                fallbackEmoji="🏪"
+                shape="circle"
+                onError={(m) => toast.error(m)}
+              />
+
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Thông tin cơ bản</h3>
               <div>
                 <Label required>Tên nhà cung cấp</Label>
@@ -161,5 +175,5 @@ export default function SupplierFormPanel({ open, mode = 'add', initial, saving,
 }
 
 function pick(s) {
-  return { name: s.name || '', code: s.code || '', email: s.email || '', address: s.address || '', tag: s.tag || '', status: s.status || 'active', note: s.note || '' }
+  return { name: s.name || '', code: s.code || '', email: s.email || '', address: s.address || '', tag: s.tag || '', status: s.status || 'active', note: s.note || '', logo_url: s.logo_url || '' }
 }

@@ -9,7 +9,6 @@ import Budget from './pages/Budget'
 import MenuCost from './pages/MenuCost'
 import Suppliers from './pages/Suppliers'
 import Notes from './pages/Notes'
-import Decisions from './pages/Decisions'
 import Settings from './pages/Settings'
 
 function App() {
@@ -29,7 +28,6 @@ function App() {
                   <Route path="/menu-cost" element={<MenuCost />} />
                   <Route path="/suppliers" element={<Suppliers />} />
                   <Route path="/notes" element={<Notes />} />
-                  <Route path="/decisions" element={<Decisions />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </Layout>

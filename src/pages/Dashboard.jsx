@@ -6,7 +6,7 @@ import {
 } from 'recharts'
 import {
   TrendingUp, Wallet, CreditCard, PiggyBank, AlertTriangle,
-  Loader2, CheckCircle2, HelpCircle, ArrowRight,
+  Loader2, CheckCircle2, ListTodo, ArrowRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -28,7 +28,9 @@ const urgentTone = {
 }
 
 const chartTooltip = {
-  contentStyle: { background: 'hsl(222 40% 8%)', border: '1px solid hsl(217 33% 15%)', borderRadius: 12, color: '#fff' },
+  contentStyle: { background: 'hsl(222 47% 11%)', border: '1px solid hsl(217 33% 22%)', borderRadius: 12, color: '#f8fafc', boxShadow: '0 10px 30px rgba(0,0,0,0.4)' },
+  itemStyle: { color: '#f8fafc' },
+  labelStyle: { color: '#cbd5e1', fontWeight: 600, marginBottom: 4 },
 }
 
 const CAT_COLOR = {
@@ -45,7 +47,6 @@ export default function Dashboard() {
   const { rows: tasks, loading: lt } = useCollection('checklist_tasks')
   const { rows: items } = useCollection('budget_items')
   const { rows: txs } = useCollection('budget_transactions')
-  const { rows: decisions } = useCollection('decisions')
   const { rows: settingsRows } = useCollection('settings', { orderBy: 'id', ascending: true, realtime: false })
 
   const budgetTotal = settingsRows[0]?.budget_total || 500000000
@@ -64,7 +65,15 @@ export default function Dashboard() {
   const remaining = budgetTotal - spent
   const spentPct = budgetTotal ? Math.round((spent / budgetTotal) * 100) : 0
 
-  const pendingDecisions = useMemo(() => decisions.filter((d) => d.status === 'pending'), [decisions])
+  // Hạng mục có tỉ lệ chi cao nhất (cảnh báo ngân sách)
+  const budgetAlerts = useMemo(() => {
+    const byItem = {}
+    for (const t of txs) byItem[t.item_id] = (byItem[t.item_id] || 0) + (t.amount || 0)
+    return items
+      .map((it) => ({ ...it, actual: byItem[it.id] || 0, ratio: it.planned ? (byItem[it.id] || 0) / it.planned : 0 }))
+      .sort((a, b) => b.ratio - a.ratio)
+      .slice(0, 4)
+  }, [items, txs])
 
   const statsCards = [
     { title: 'TIẾN ĐỘ SETUP', value: `${taskStat.pct}%`, percent: taskStat.pct, sub: `${taskStat.done} / ${taskStat.total} công việc`, icon: TrendingUp, tone: 'primary' },
@@ -102,7 +111,7 @@ export default function Dashboard() {
     { title: 'Việc cần xử lý', count: taskStat.overdue, subtitle: 'Quá hạn', icon: AlertTriangle, tone: 'destructive' },
     { title: 'Đang thực hiện', count: taskStat.doing, subtitle: 'Trong tiến độ', icon: Loader2, tone: 'warning' },
     { title: 'Hoàn thành', count: taskStat.done, subtitle: 'Công việc', icon: CheckCircle2, tone: 'success' },
-    { title: 'Chờ quyết định', count: pendingDecisions.length, subtitle: 'Khoản/việc', icon: HelpCircle, tone: 'info' },
+    { title: 'Chưa làm', count: taskStat.todo, subtitle: 'Công việc', icon: ListTodo, tone: 'info' },
   ]
 
   const todoItems = useMemo(() => tasks
@@ -254,19 +263,29 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Chờ quyết định</CardTitle>
-            <Link to="/decisions" className="flex items-center gap-1 text-sm text-primary hover:underline">Xem tất cả <ArrowRight className="h-3.5 w-3.5" /></Link>
+            <CardTitle>Cảnh báo ngân sách</CardTitle>
+            <Link to="/budget" className="flex items-center gap-1 text-sm text-primary hover:underline">Xem tất cả <ArrowRight className="h-3.5 w-3.5" /></Link>
           </CardHeader>
           <CardContent className="space-y-2">
-            {pendingDecisions.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">Không có quyết định nào đang chờ.</p>
-            ) : pendingDecisions.slice(0, 4).map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3 transition-colors hover:border-primary/50">
-                <HelpCircle className="h-4 w-4 shrink-0 text-info" />
-                <span className="flex-1 text-sm text-foreground">{item.title}</span>
-                <Badge variant="muted">Chờ</Badge>
-              </div>
-            ))}
+            {budgetAlerts.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">Chưa có hạng mục ngân sách.</p>
+            ) : budgetAlerts.map((item) => {
+              const pct = Math.round(item.ratio * 100)
+              const over = item.actual > item.planned
+              return (
+                <div key={item.id} className="rounded-lg border border-border bg-secondary/30 p-3">
+                  <div className="flex items-center gap-3">
+                    <span className={cn('h-2 w-2 shrink-0 rounded-full', over ? 'bg-destructive' : pct >= 80 ? 'bg-warning' : 'bg-success')} />
+                    <span className="flex-1 truncate text-sm text-foreground">{item.name}</span>
+                    <Badge variant={over ? 'destructive' : pct >= 80 ? 'warning' : 'success'}>{pct}%</Badge>
+                  </div>
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                    <div className={cn('h-full rounded-full', over ? 'bg-destructive' : pct >= 80 ? 'bg-warning' : 'bg-success')} style={{ width: `${Math.min(pct, 100)}%` }} />
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">{formatVND(item.actual)} / {formatVND(item.planned)}</div>
+                </div>
+              )
+            })}
           </CardContent>
         </Card>
       </div>

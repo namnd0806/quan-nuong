@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { BadgeSelect } from '@/components/ui/badge-select'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
+import { ImageFrame } from '@/components/ui/image-upload'
+import { useToast } from '@/components/ui/toast'
 import MenuItemFormPanel from '@/components/MenuItemFormPanel'
 import FoodCostReportPanel from '@/components/FoodCostReportPanel'
 import { useCollection } from '@/hooks/useCollection'
@@ -43,7 +45,8 @@ function foodCostColor(fc) { if (fc > 33) return 'bg-destructive'; if (fc > 30) 
 function foodCostText(fc) { if (fc > 33) return 'text-destructive'; if (fc > 30) return 'text-warning'; return 'text-success' }
 
 export default function MenuCost() {
-  const { rows: menu, loading, error, create, update, remove } = useCollection('menu_items')
+  const toast = useToast()
+  const { rows: menu, loading, error, create, update, remove } = useCollection('menu_items', { notify: { label: 'món', type: 'update' } })
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -124,14 +127,19 @@ export default function MenuCost() {
       if (id) await update(id, values)
       else await create(values)
       setAddOpen(false); setEditing(null)
-    } catch (e) { alert('Lưu món thất bại: ' + e.message) }
+      toast.success(id ? `Đã cập nhật “${values.name}”.` : `Đã thêm món “${values.name}”.`)
+    } catch (e) { toast.error('Lưu món thất bại: ' + e.message) }
     finally { setSaving(false) }
   }
 
   const handleDelete = async () => {
     setDeleting(true)
-    try { await remove(confirmDel.id); setConfirmDel(null) }
-    catch (e) { alert('Xóa thất bại: ' + e.message) }
+    try {
+      const name = confirmDel?.name
+      await remove(confirmDel.id); setConfirmDel(null)
+      toast.success(`Đã xóa “${name}”.`)
+    }
+    catch (e) { toast.error('Xóa thất bại: ' + e.message) }
     finally { setDeleting(false) }
   }
 
@@ -253,7 +261,7 @@ export default function MenuCost() {
                   <tr key={m.id} className="border-b border-border/60 transition-colors last:border-0 hover:bg-secondary/30">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-xl">{m.img}</div>
+                        <ImageFrame src={m.img} emoji="🍽️" size="h-11 w-11" rounded="rounded-lg" />
                         <div>
                           <div className="font-medium text-foreground">{m.name}</div>
                           <div className="text-xs text-muted-foreground">{m.code}</div>

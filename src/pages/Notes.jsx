@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { useToast } from '@/components/ui/toast'
 import { useCollection } from '@/hooks/useCollection'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
@@ -27,8 +28,9 @@ function fmtDate(iso) {
 }
 
 export default function Notes() {
+  const toast = useToast()
   const { profile } = useAuth()
-  const { rows: notes, loading, error, create, update, remove } = useCollection('notes')
+  const { rows: notes, loading, error, create, update, remove } = useCollection('notes', { notify: { label: 'ghi chú', type: 'update' } })
   const [query, setQuery] = useState('')
   const [tag, setTag] = useState('all')
   const [editing, setEditing] = useState(null) // note object or draft
@@ -52,15 +54,16 @@ export default function Notes() {
       } else {
         await create({ title: draft.title, body: draft.body, tag: draft.tag, author: profile?.name || 'Bạn', pinned: false })
       }
+      toast.success('Đã lưu ghi chú.')
       setEditing(null)
     } catch (e) {
-      alert('Lưu ghi chú thất bại: ' + e.message)
+      toast.error('Lưu ghi chú thất bại: ' + e.message)
     } finally {
       setSaving(false)
     }
   }
-  const togglePin = (n) => update(n.id, { pinned: !n.pinned }).catch((e) => alert('Không thể ghim: ' + e.message))
-  const confirmRemove = async (id) => { try { await remove(id) } catch (e) { alert('Xóa thất bại: ' + e.message) } setConfirmDel(null) }
+  const togglePin = (n) => update(n.id, { pinned: !n.pinned }).catch((e) => toast.error('Không thể ghim: ' + e.message))
+  const confirmRemove = async (id) => { try { await remove(id); toast.success('Đã xóa ghi chú.') } catch (e) { toast.error('Xóa thất bại: ' + e.message) } setConfirmDel(null) }
 
   return (
     <div className="space-y-5">

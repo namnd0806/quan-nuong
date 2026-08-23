@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 import { useTheme } from '@/components/theme-provider'
 import { useCollection } from '@/hooks/useCollection'
 import { supabase } from '@/lib/supabase'
@@ -29,6 +30,29 @@ const BADGES = ['Chủ quản', 'Quản lý', 'Thành viên']
 const badgeVariant = { 'Chủ quản': 'default', 'Quản lý': 'success', 'Thành viên': 'muted' }
 const CAT_COLORS = ['hsl(221 83% 53%)', 'hsl(160 84% 39%)', 'hsl(38 92% 50%)', 'hsl(262 83% 66%)', 'hsl(330 81% 60%)', 'hsl(0 72% 58%)']
 const CAT_ICONS = ['🏗️', '🎨', '🪑', '🍽️', '📣', '⚙️', '📦', '🏪']
+
+// Chuẩn hóa dữ liệu cũ (tên icon lucide / từ khóa màu) sang emoji + màu hợp lệ.
+const LUCIDE_TO_EMOJI = {
+  Building2: '🏗️', PencilRuler: '🎨', Armchair: '🪑', UtensilsCrossed: '🍽️',
+  Megaphone: '📣', Settings2: '⚙️', Package: '📦', Store: '🏪', Wrench: '🔧',
+}
+const TONE_TO_HSL = {
+  primary: 'hsl(221 83% 53%)', info: 'hsl(199 89% 48%)', success: 'hsl(160 84% 39%)',
+  warning: 'hsl(38 92% 50%)', destructive: 'hsl(0 72% 58%)', purple: 'hsl(262 83% 66%)', pink: 'hsl(330 81% 60%)',
+}
+function normIcon(icon) {
+  if (!icon) return '📦'
+  if (LUCIDE_TO_EMOJI[icon]) return LUCIDE_TO_EMOJI[icon]
+  // Nếu là chuỗi chữ cái (tên component) → không phải emoji, dùng mặc định
+  if (/^[A-Za-z][A-Za-z0-9]+$/.test(icon)) return '📦'
+  return icon
+}
+function normColor(color) {
+  if (!color) return 'hsl(215 20% 40%)'
+  if (TONE_TO_HSL[color]) return TONE_TO_HSL[color]
+  if (color.startsWith('hsl') || color.startsWith('#') || color.startsWith('rgb')) return color
+  return 'hsl(215 20% 40%)'
+}
 
 const LOOKUP_TYPES = [
   { type: 'supplier_category', name: 'Danh mục nhà cung cấp', icon: Store, tone: 'destructive' },
@@ -55,8 +79,8 @@ async function saveSettings(patch) {
 export default function Settings() {
   const [tab, setTab] = useState('overview')
   const settings = useCollection('settings', { orderBy: 'id', ascending: true, realtime: false })
-  const members = useCollection('members', { orderBy: 'sort', ascending: true })
-  const categories = useCollection('main_categories', { orderBy: 'sort', ascending: true })
+  const members = useCollection('members', { orderBy: 'sort', ascending: true, notify: { label: 'thành viên', type: 'update' } })
+  const categories = useCollection('main_categories', { orderBy: 'sort', ascending: true, notify: { label: 'hạng mục', type: 'update' } })
   const lookups = useCollection('lookups', { orderBy: 'sort', ascending: true })
 
   const s = settings.rows[0] || {}
@@ -149,6 +173,7 @@ function OverviewTab({ ctx }) {
 
 function CategoriesCard({ ctx }) {
   const { categories } = ctx
+  const toast = useToast()
   const [editing, setEditing] = useState(null)
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -162,13 +187,14 @@ function CategoriesCard({ ctx }) {
       if (form.id) await categories.update(form.id, values)
       else await categories.create(values)
       setOpen(false); setEditing(null)
-    } catch (e) { alert('Lưu hạng mục thất bại: ' + e.message) }
+      toast.success(form.id ? 'Đã cập nhật hạng mục.' : 'Đã thêm hạng mục.')
+    } catch (e) { toast.error('Lưu hạng mục thất bại: ' + e.message) }
     finally { setSaving(false) }
   }
   const del = async () => {
     setDeleting(true)
-    try { await categories.remove(confirmDel.id); setConfirmDel(null) }
-    catch (e) { alert('Xóa thất bại: ' + e.message) }
+    try { await categories.remove(confirmDel.id); setConfirmDel(null); toast.success('Đã xóa hạng mục.') }
+    catch (e) { toast.error('Xóa thất bại: ' + e.message) }
     finally { setDeleting(false) }
   }
 
@@ -186,8 +212,8 @@ function CategoriesCard({ ctx }) {
           <p className="py-4 text-center text-sm text-muted-foreground">Chưa có hạng mục nào.</p>
         ) : categories.rows.map((c) => (
           <div key={c.id} className="group flex items-center gap-3 rounded-xl border border-border bg-secondary/30 p-3 transition-colors hover:bg-secondary/50">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl" style={{ backgroundColor: c.color || 'hsl(215 20% 40%)' }}>
-              <span>{c.icon || '📦'}</span>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg text-xl leading-none" style={{ backgroundColor: normColor(c.color) }}>
+              <span className="leading-none">{normIcon(c.icon)}</span>
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate font-medium text-foreground">{c.name}</div>
@@ -241,6 +267,7 @@ function CategoryFormModal({ open, item, saving, onClose, onSave }) {
 
 function BudgetCard({ ctx }) {
   const { s } = ctx
+  const toast = useToast()
   const [open, setOpen] = useState(false)
   const [total, setTotal] = useState('')
   const [note, setNote] = useState('')
@@ -249,8 +276,8 @@ function BudgetCard({ ctx }) {
 
   const save = async () => {
     setSaving(true)
-    try { await saveSettings({ budget_total: Number(total) || 0 }); setOpen(false) }
-    catch (e) { alert('Lưu thất bại: ' + e.message) }
+    try { await saveSettings({ budget_total: Number(total) || 0 }); await ctx.settings.refetch(); setOpen(false); toast.success('Đã lưu ngân sách.') }
+    catch (e) { toast.error('Lưu thất bại: ' + e.message) }
     finally { setSaving(false) }
   }
 
@@ -303,6 +330,7 @@ function BudgetCard({ ctx }) {
 
 function PeopleCard({ ctx }) {
   const { members } = ctx
+  const toast = useToast()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -316,13 +344,14 @@ function PeopleCard({ ctx }) {
       if (form.id) await members.update(form.id, values)
       else await members.create(values)
       setOpen(false); setEditing(null)
-    } catch (e) { alert('Lưu thất bại: ' + e.message) }
+      toast.success(form.id ? 'Đã cập nhật thành viên.' : 'Đã thêm thành viên.')
+    } catch (e) { toast.error('Lưu thất bại: ' + e.message) }
     finally { setSaving(false) }
   }
   const del = async () => {
     setDeleting(true)
-    try { await members.remove(confirmDel.id); setConfirmDel(null) }
-    catch (e) { alert('Xóa thất bại: ' + e.message) }
+    try { await members.remove(confirmDel.id); setConfirmDel(null); toast.success('Đã xóa thành viên.') }
+    catch (e) { toast.error('Xóa thất bại: ' + e.message) }
     finally { setDeleting(false) }
   }
 
@@ -430,6 +459,7 @@ function SharedCatsSection({ ctx }) {
 }
 
 function LookupManagerModal({ cfg, lookups, onClose }) {
+  const toast = useToast()
   const [label, setLabel] = useState('')
   const [busy, setBusy] = useState(false)
   useEffect(() => { setLabel('') }, [cfg])
@@ -438,12 +468,12 @@ function LookupManagerModal({ cfg, lookups, onClose }) {
   const add = async () => {
     if (!label.trim() || busy) return
     setBusy(true)
-    try { await lookups.create({ type: cfg.type, label: label.trim(), sort: list.length }); setLabel('') }
-    catch (e) { alert('Thêm thất bại: ' + e.message) }
+    try { await lookups.create({ type: cfg.type, label: label.trim(), sort: list.length }); setLabel(''); toast.success('Đã thêm mục.') }
+    catch (e) { toast.error('Thêm thất bại: ' + e.message) }
     finally { setBusy(false) }
   }
   const del = async (id) => {
-    try { await lookups.remove(id) } catch (e) { alert('Xóa thất bại: ' + e.message) }
+    try { await lookups.remove(id); toast.success('Đã xóa mục.') } catch (e) { toast.error('Xóa thất bại: ' + e.message) }
   }
 
   return (
@@ -473,6 +503,7 @@ function LookupManagerModal({ cfg, lookups, onClose }) {
 
 function ProjectInfoTab({ ctx }) {
   const { s } = ctx
+  const toast = useToast()
   const [form, setForm] = useState({ project_name: '', address: '', opening_date: '', start_date: '', description: '' })
   const [saving, setSaving] = useState(false)
   useEffect(() => {
@@ -490,7 +521,8 @@ function ProjectInfoTab({ ctx }) {
         opening_date: form.opening_date || null, start_date: form.start_date || null, description: form.description || null,
       })
       await ctx.settings.refetch()
-    } catch (e) { alert('Lưu thất bại: ' + e.message) }
+      toast.success('Đã lưu thông tin dự án.')
+    } catch (e) { toast.error('Lưu thất bại: ' + e.message) }
     finally { setSaving(false) }
   }
 
@@ -525,6 +557,7 @@ function ProjectInfoTab({ ctx }) {
 
 function PreferencesTab({ ctx }) {
   const { s } = ctx
+  const toast = useToast()
   const { theme, toggle } = useTheme()
   const [target, setTarget] = useState('')
   const [saving, setSaving] = useState(false)
@@ -532,8 +565,8 @@ function PreferencesTab({ ctx }) {
 
   const saveTarget = async () => {
     setSaving(true)
-    try { await saveSettings({ food_cost_target: Number(target) || 30 }); await ctx.settings.refetch() }
-    catch (e) { alert('Lưu thất bại: ' + e.message) }
+    try { await saveSettings({ food_cost_target: Number(target) || 30 }); await ctx.settings.refetch(); toast.success('Đã lưu tùy chọn.') }
+    catch (e) { toast.error('Lưu thất bại: ' + e.message) }
     finally { setSaving(false) }
   }
 

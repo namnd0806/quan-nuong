@@ -90,7 +90,7 @@ export default function FoodCostReportPanel({ open, onClose, data }) {
                         <Pie data={distributionData} cx="50%" cy="50%" innerRadius={34} outerRadius={52} paddingAngle={2} dataKey="value" stroke="none">
                           {distributionData.map((d, i) => <Cell key={i} fill={d.color} />)}
                         </Pie>
-                        <Tooltip contentStyle={{ background: 'hsl(222 40% 8%)', border: '1px solid hsl(217 33% 15%)', borderRadius: 12 }} formatter={(v) => `${v}%`} />
+                        <Tooltip contentStyle={{ background: 'hsl(222 47% 11%)', border: '1px solid hsl(217 33% 22%)', borderRadius: 12, color: '#f8fafc' }} itemStyle={{ color: '#f8fafc' }} labelStyle={{ color: '#cbd5e1' }} formatter={(v) => `${v}%`} />
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="flex-1 space-y-1">

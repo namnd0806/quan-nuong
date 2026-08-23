@@ -4,6 +4,8 @@ import { X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import ImageUpload from '@/components/ui/image-upload'
+import { useToast } from '@/components/ui/toast'
 
 function Label({ children, required }) {
   return (
@@ -26,6 +28,7 @@ const CATEGORIES = ['Thịt nướng', 'Hải sản', 'Lẩu', 'Món phụ', 'Đ
 const emptyItem = { code: '', name: '', img: '🍽️', cat: '', sell: '', cost: '', target: 30 }
 
 export default function MenuItemFormPanel({ open, item, saving, onClose, onSave }) {
+  const toast = useToast()
   const [form, setForm] = useState(emptyItem)
   useEffect(() => {
     if (open) setForm(item ? { ...emptyItem, ...item, sell: String(item.sell ?? ''), cost: String(item.cost ?? '') } : emptyItem)
@@ -69,6 +72,16 @@ export default function MenuItemFormPanel({ open, item, saving, onClose, onSave 
             </div>
 
             <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
+              <Section title="Hình ảnh món ăn">
+                <ImageUpload
+                  value={form.img}
+                  onChange={(v) => set('img', v)}
+                  folder="menu"
+                  fallbackEmoji="🍽️"
+                  onError={(m) => toast.error(m)}
+                />
+              </Section>
+
               <Section title="Thông tin món ăn">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
@@ -82,13 +95,9 @@ export default function MenuItemFormPanel({ open, item, saving, onClose, onSave 
                       <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <Label>Mã món</Label>
                     <Input placeholder="VD: MN-033" value={form.code} onChange={(e) => set('code', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Icon (emoji)</Label>
-                    <Input placeholder="🍽️" value={form.img} onChange={(e) => set('img', e.target.value)} maxLength={4} />
                   </div>
                 </div>
               </Section>

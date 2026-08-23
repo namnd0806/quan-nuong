@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { BadgeSelect } from '@/components/ui/badge-select'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 import { useCollection } from '@/hooks/useCollection'
 import { cn } from '@/lib/utils'
 
@@ -55,7 +56,8 @@ function fmtDate(iso) {
 }
 
 export default function Checklist() {
-  const { rows: tasks, loading, error, create, update, remove } = useCollection('checklist_tasks')
+  const toast = useToast()
+  const { rows: tasks, loading, error, create, update, remove } = useCollection('checklist_tasks', { notify: { label: 'công việc', type: 'update' } })
   const { rows: members } = useCollection('members', { orderBy: 'sort', ascending: true })
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
@@ -69,7 +71,7 @@ export default function Checklist() {
 
   const assignees = useMemo(() => (members.length ? members.map((m) => m.name) : ['Nam', 'Phương']), [members])
 
-  const patch = (id, p) => update(id, p).catch((e) => alert('Cập nhật thất bại: ' + e.message))
+  const patch = (id, p) => update(id, p).catch((e) => toast.error('Cập nhật thất bại: ' + e.message))
 
   const counts = useMemo(() => ({
     all: tasks.length,
@@ -105,15 +107,16 @@ export default function Checklist() {
       }
       if (draft.id) await update(draft.id, values)
       else await create(values)
+      toast.success(draft.id ? 'Đã cập nhật công việc.' : 'Đã thêm công việc.')
       setPanelOpen(false); setEditing(null)
-    } catch (e) { alert('Lưu công việc thất bại: ' + e.message) }
+    } catch (e) { toast.error('Lưu công việc thất bại: ' + e.message) }
     finally { setSaving(false) }
   }
 
   const handleDelete = async () => {
     setDeleting(true)
-    try { await remove(confirmDel.id); setConfirmDel(null) }
-    catch (e) { alert('Xóa thất bại: ' + e.message) }
+    try { await remove(confirmDel.id); toast.success('Đã xóa công việc.'); setConfirmDel(null) }
+    catch (e) { toast.error('Xóa thất bại: ' + e.message) }
     finally { setDeleting(false) }
   }
 
