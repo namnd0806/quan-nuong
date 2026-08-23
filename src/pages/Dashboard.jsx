@@ -15,11 +15,11 @@ import { formatVND, cn } from '@/lib/utils'
 
 // Bảng màu accent (dạng "H S% L%") để dùng cho gradient + glow
 const TONE = {
-  primary: { hsl: '217 91% 60%', text: 'text-primary' },
-  info: { hsl: '258 90% 66%', text: 'text-info' },
-  warning: { hsl: '38 92% 50%', text: 'text-warning' },
-  success: { hsl: '160 84% 39%', text: 'text-success' },
-  destructive: { hsl: '350 89% 60%', text: 'text-destructive' },
+  primary: { hsl: '217 91% 60%', text: 'text-blue-400' },
+  info: { hsl: '280 85% 55%', text: 'text-purple-400' },
+  warning: { hsl: '39 89% 55%', text: 'text-amber-400' },
+  success: { hsl: '160 84% 39%', text: 'text-emerald-400' },
+  destructive: { hsl: '0 84% 60%', text: 'text-red-400' },
 }
 
 const chartTooltip = {
@@ -162,27 +162,37 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: i * 0.08 }}
             >
-              <Card className="surface group relative overflow-hidden rounded-2xl transition-all duration-200">
-                {/* Gradient glow góc phải */}
+              <Card className="surface group relative overflow-hidden rounded-2xl transition-all duration-200 border border-muted/20">
+                {/* Gradient background subtle per tone */}
                 <div
-                  className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full opacity-0 blur-3xl transition-opacity duration-300 group-hover:opacity-40"
-                  style={{ background: `hsl(${tn.hsl} / 0.4)` }}
+                  className="pointer-events-none absolute inset-0 opacity-20"
+                  style={{ background: `radial-gradient(circle at 0% 0%, hsl(${tn.hsl} / 0.3), transparent 60%)` }}
                 />
-                {/* Gradient subtle phía trên */}
+                {/* Top gradient line */}
                 <div
-                  className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-50"
-                  style={{ background: `linear-gradient(90deg, transparent, hsl(${tn.hsl} / 0.3), transparent)` }}
+                  className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
+                  style={{ background: `linear-gradient(90deg, transparent, hsl(${tn.hsl} / 0.4), transparent)` }}
                 />
                 <CardContent className="relative p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{stat.title}</span>
-                      <div className="mt-3 truncate text-2xl font-bold text-foreground">{stat.value}</div>
-                      <div className="mt-2 text-xs text-muted-foreground">{stat.sub}</div>
+                  <div className="flex items-start gap-4">
+                    {/* Icon + mini info bên trái */}
+                    <div className="flex flex-col items-start gap-1">
+                      <div
+                        className="flex h-11 w-11 items-center justify-center rounded-lg"
+                        style={{ background: `hsl(${tn.hsl} / 0.18)`, border: `1px solid hsl(${tn.hsl} / 0.35)` }}
+                      >
+                        <Icon className={cn('h-5 w-5', tn.text)} />
+                      </div>
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/80">{stat.title}</span>
                     </div>
-                    <div className="relative grid h-16 w-16 shrink-0 place-items-center">
+                    {/* Value ở giữa */}
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate text-xl font-bold text-foreground">{stat.value}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">{stat.sub}</div>
+                    </div>
+                    {/* Mini ring bên phải */}
+                    <div className="relative h-14 w-14 shrink-0">
                       <MiniRing percent={stat.percent} hsl={tn.hsl} />
-                      <Icon className={cn('absolute h-5 w-5', tn.text)} />
                     </div>
                   </div>
                 </CardContent>
@@ -194,13 +204,13 @@ export default function Dashboard() {
 
       {/* Charts row: Area trend + multi-ring radial */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <Card className="surface rounded-2xl lg:col-span-2">
+        <Card className="surface rounded-2xl lg:col-span-2 border border-muted/20">
           <CardHeader className="flex-row items-center justify-between gap-4">
-            <CardTitle className="text-sm">Xu hướng ngân sách theo hạng mục</CardTitle>
+            <CardTitle className="text-sm font-semibold">Xu hướng ngân sách theo hạng mục</CardTitle>
             <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />Dự toán</span>
-              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-success" />Thực chi</span>
-              <span className="hidden rounded-md border border-border/70 bg-muted/30 px-2 py-1 sm:inline">Triệu đ</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-400" />Dự toán</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-400" />Thực chi</span>
+              <span className="hidden rounded-md border border-border/70 bg-muted/40 px-2 py-1 sm:inline text-[11px]">Triệu đ</span>
             </div>
           </CardHeader>
           <CardContent>
@@ -219,53 +229,53 @@ export default function Dashboard() {
                       <stop offset="100%" stopColor="hsl(160 84% 39%)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(215 20% 65% / 0.06)" vertical={false} />
-                  <XAxis dataKey="name" stroke="hsl(215 20% 65%)" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(215 20% 65%)" fontSize={12} tickLine={false} axisLine={false} unit="M" />
-                  <Tooltip {...chartTooltip} cursor={{ stroke: 'hsl(215 20% 65% / 0.2)', strokeDasharray: '4 4' }} formatter={(v) => `${v}M`} />
-                  <Area type="monotone" dataKey="Dự toán" stroke="hsl(217 91% 60%)" strokeWidth={2} fill="url(#gPlan)" dot={false} activeDot={{ r: 5 }} />
-                  <Area type="monotone" dataKey="Thực chi" stroke="hsl(160 84% 39%)" strokeWidth={2} fill="url(#gActual)" dot={false} activeDot={{ r: 5 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(215 20% 65% / 0.08)" vertical={false} />
+                  <XAxis dataKey="name" stroke="hsl(215 20% 50%)" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="hsl(215 20% 50%)" fontSize={11} tickLine={false} axisLine={false} unit="M" />
+                  <Tooltip {...chartTooltip} cursor={{ stroke: 'hsl(217 91% 60% / 0.25)', strokeDasharray: '4 4' }} formatter={(v) => `${v}M`} />
+                  <Area type="monotone" dataKey="Dự toán" stroke="hsl(217 91% 60%)" strokeWidth={2.5} fill="url(#gPlan)" dot={false} activeDot={{ r: 5 }} />
+                  <Area type="monotone" dataKey="Thực chi" stroke="hsl(160 84% 39%)" strokeWidth={2.5} fill="url(#gActual)" dot={false} activeDot={{ r: 5 }} />
                 </AreaChart>
               </ResponsiveContainer>
             )}
           </CardContent>
         </Card>
 
-        <Card className="surface rounded-2xl">
+        <Card className="surface rounded-2xl border border-muted/20">
           <CardHeader>
             <CardTitle className="text-sm">Tổng tiến độ công việc</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-6">
             {progressTotal === 0 ? (
-              <div className="flex h-72 items-center justify-center text-sm text-muted-foreground">Chưa có công việc</div>
+              <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">Chưa có công việc</div>
             ) : (
               <>
-                <div className="relative">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <RadialBarChart data={radialData} innerRadius="42%" outerRadius="100%" startAngle={90} endAngle={-270} barSize={10}>
-                      <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                      <RadialBar dataKey="value" background={{ fill: 'hsl(215 20% 65% / 0.08)' }} cornerRadius={6} />
-                      <Tooltip {...chartTooltip} formatter={(v, _n, p) => [`${p?.payload?.count} · ${v}%`, p?.payload?.name]} />
-                    </RadialBarChart>
-                  </ResponsiveContainer>
-                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-bold text-foreground">{taskStat.pct}%</span>
-                    <span className="text-xs text-muted-foreground">hoàn tất</span>
+                <div className="flex items-start gap-6">
+                  {/* Radial chart bên trái */}
+                  <div className="flex-1 relative">
+                    <ResponsiveContainer width="100%" height={180}>
+                      <RadialBarChart data={radialData} innerRadius="45%" outerRadius="100%" startAngle={90} endAngle={-270} barSize={12}>
+                        <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                        <RadialBar dataKey="value" background={{ fill: 'hsl(215 20% 65% / 0.1)' }} cornerRadius={8} />
+                        <Tooltip {...chartTooltip} formatter={(v, _n, p) => [`${p?.payload?.count} · ${v}%`, p?.payload?.name]} />
+                      </RadialBarChart>
+                    </ResponsiveContainer>
+                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-2xl font-bold text-foreground">{taskStat.pct}%</span>
+                      <span className="text-[10px] text-muted-foreground">hoàn tất</span>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-4 space-y-2">
-                  {radialData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full" style={{ background: item.fill }} />
-                        <span className="text-muted-foreground">{item.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
+                  {/* Legend bên phải */}
+                  <div className="space-y-2">
+                    {radialData.map((item) => (
+                      <div key={item.name} className="flex items-center gap-2 text-[12px]">
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ background: item.fill }} />
+                        <span className="text-muted-foreground flex-1">{item.name}</span>
                         <span className="font-semibold text-foreground">{item.count}</span>
                         <span className="text-muted-foreground">({item.value}%)</span>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </>
             )}
@@ -285,20 +295,20 @@ export default function Dashboard() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="surface group relative overflow-hidden rounded-xl transition-all duration-200 hover:border-primary/40">
+              <Card className="surface group relative overflow-hidden rounded-xl transition-all duration-200 border border-muted/20 hover:border-muted/40">
                 <div
-                  className="pointer-events-none absolute inset-0 opacity-40"
-                  style={{ background: `radial-gradient(circle at 100% 0%, hsl(${tn.hsl} / 0.15), transparent 70%)` }}
+                  className="pointer-events-none absolute inset-0 opacity-50"
+                  style={{ background: `radial-gradient(circle at 50% 0%, hsl(${tn.hsl} / 0.2), transparent 70%)` }}
                 />
-                <CardContent className="relative flex flex-col items-center gap-2 p-4 text-center">
+                <CardContent className="relative flex flex-col items-center gap-2.5 p-4 text-center">
                   <div
                     className="flex h-10 w-10 items-center justify-center rounded-lg"
-                    style={{ background: `hsl(${tn.hsl} / 0.12)`, border: `1px solid hsl(${tn.hsl} / 0.25)` }}
+                    style={{ background: `hsl(${tn.hsl} / 0.2)`, border: `1px solid hsl(${tn.hsl} / 0.4)` }}
                   >
-                    <Icon className={cn('h-4 w-4', tn.text)} />
+                    <Icon className={cn('h-5 w-5', tn.text)} />
                   </div>
-                  <div className="text-xl font-bold text-foreground">{task.count}</div>
-                  <div className="text-xs font-medium leading-tight text-muted-foreground">{task.title}</div>
+                  <div className="text-2xl font-bold text-foreground">{task.count}</div>
+                  <div className="text-[11px] font-semibold leading-tight text-muted-foreground">{task.title}</div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -308,9 +318,9 @@ export default function Dashboard() {
 
       {/* Bottom: vertical timeline + progress monitoring panel */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <Card className="surface rounded-2xl">
+        <Card className="surface rounded-2xl border border-muted/20">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-sm">Việc quan trọng</CardTitle>
+            <CardTitle className="text-sm font-semibold">Việc quan trọng</CardTitle>
             <Link to="/checklist" className="flex items-center gap-1 text-xs text-primary hover:underline">Xem tất cả <ArrowRight className="h-3 w-3" /></Link>
           </CardHeader>
           <CardContent>
@@ -352,9 +362,9 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="surface rounded-2xl">
+        <Card className="surface rounded-2xl border border-muted/20">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-sm"><AlertTriangle className="h-4 w-4 text-warning" /> Cảnh báo ngân sách</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-warning" /> Cảnh báo ngân sách</CardTitle>
             <Link to="/budget" className="flex items-center gap-1 text-xs text-primary hover:underline">Xem tất cả <ArrowRight className="h-3 w-3" /></Link>
           </CardHeader>
           <CardContent className="space-y-5">
