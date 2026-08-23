@@ -48,12 +48,27 @@ function SidebarContent({ onNavigate }) {
   const initial = name.charAt(0).toUpperCase()
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 border-b border-border px-5 py-5">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-info shadow-lg shadow-primary/30">
-          <Flame className="h-6 w-6 text-white" />
-        </div>
+      <div className="flex items-center gap-3 border-b border-border/70 px-5 py-5">
+        {/* Logo Nướng chill */}
+        <svg width="40" height="40" viewBox="0 0 40 40" className="shrink-0" fill="none">
+          {/* Bếp than hoa tối giản */}
+          <defs>
+            <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="hsl(38 92% 50%)" />
+              <stop offset="100%" stopColor="hsl(258 90% 66%)" />
+            </linearGradient>
+          </defs>
+          {/* Bowl grill */}
+          <path d="M8 18c0-5 6-8 12-8s12 3 12 8v6c0 2-2 3-4 3H12c-2 0-4-1-4-3v-6z" stroke="url(#logoGrad)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+          {/* Viên than đỏ bên trong */}
+          <circle cx="20" cy="22" r="1.5" fill="hsl(350 89% 60%)" opacity="0.8" />
+          <circle cx="16" cy="20" r="1.2" fill="hsl(350 89% 60%)" opacity="0.6" />
+          <circle cx="24" cy="20" r="1.2" fill="hsl(350 89% 60%)" opacity="0.6" />
+          {/* Flame nhỏ phía trên */}
+          <path d="M20 12c0.5-1.5 2-2 2-3 0-1-0.5-1.5-1.5-1.5-1 0-1.5 0.5-1.5 1.5 0 1 1.5 1.5 1 3z" fill="url(#logoGrad)" />
+        </svg>
         <div>
-          <div className="font-display text-lg leading-tight text-foreground">QUÁN NƯỚNG</div>
+          <div className="font-sans text-sm font-bold leading-tight text-foreground">Nướng chill</div>
           <div className="text-xs text-muted-foreground">Pre-opening</div>
         </div>
       </div>
@@ -81,7 +96,8 @@ function SidebarContent({ onNavigate }) {
                   {isActive && (
                     <motion.span
                       layoutId="nav-active"
-                      className="absolute inset-0 -z-10 rounded-lg bg-primary shadow-lg shadow-primary/25"
+                      className="absolute inset-0 -z-10 rounded-lg border border-primary/30"
+                      style={{ background: 'linear-gradient(90deg, rgba(37,99,235,.15), rgba(99,102,241,.08))' }}
                       transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                     />
                   )}
@@ -100,12 +116,13 @@ function SidebarContent({ onNavigate }) {
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
-              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
               isActive
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
+                ? 'border border-primary/30 text-foreground'
                 : 'text-muted-foreground hover:bg-accent hover:text-foreground'
             )
           }
+          style={({ isActive }) => isActive ? { background: 'linear-gradient(90deg, rgba(37,99,235,.15), rgba(99,102,241,.08))' } : {}}
         >
           <Settings className="h-5 w-5" />
           <span>Cài đặt</span>
@@ -299,22 +316,22 @@ export default function Layout({ children }) {
       </AnimatePresence>
 
       <div className="lg:pl-[264px]">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border glass px-4 md:px-6">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border/70 backdrop-blur-sm px-4 md:px-6" style={{ background: 'linear-gradient(180deg, hsl(218 44% 7% / 0.98), hsl(218 42% 9% / 0.95))' }}>
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
 
-          <div className="font-display text-lg text-foreground">{pageTitles[location.pathname] || 'Quán Nướng'}</div>
+          <div className="font-sans text-base font-bold text-foreground">{pageTitles[location.pathname] || 'Quán Nướng'}</div>
 
           <div className="ml-auto flex items-center gap-2">
-            <div className="hidden items-center gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-muted-foreground sm:flex">
+            <div className="hidden items-center gap-2 rounded-lg border border-border/70 bg-secondary/40 px-3 py-2 text-sm text-muted-foreground sm:flex" style={{ background: 'rgba(218 41% 12% / 0.6)' }}>
               <Search className="h-4 w-4" />
               <input
                 placeholder="Tìm kiếm..."
                 className="w-32 bg-transparent text-foreground outline-none placeholder:text-muted-foreground md:w-48"
               />
             </div>
-            <Button variant="secondary" size="sm" className="hidden md:inline-flex">
+            <Button variant="ghost" size="sm" className="hidden text-xs text-muted-foreground md:inline-flex hover:text-foreground">
               {today}
             </Button>
             <ThemeToggle />
