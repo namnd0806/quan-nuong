@@ -325,17 +325,19 @@ export default function Dashboard() {
                   style={{ background: `radial-gradient(circle at 50% 0%, hsl(${tn.hsl} / 0.25), transparent 75%)` }}
                 />
                 <CardContent className="relative p-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
                       style={{ background: `hsl(${tn.hsl} / 0.2)`, border: `1.5px solid hsl(${tn.hsl} / 0.5)` }}
                     >
                       <Icon className={cn('h-5 w-5', tn.text)} />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex items-start gap-2">
                       <div className="text-2xl font-bold text-foreground">{task.count}</div>
-                      <div className="text-xs font-semibold leading-tight text-foreground">{task.title}</div>
-                      <div className="text-[10px] text-muted-foreground">{task.subtitle}</div>
+                      <div className="flex flex-col gap-0.5">
+                        <div className="text-xs font-semibold text-foreground">{task.title}</div>
+                        <div className="text-[10px] text-muted-foreground">{task.subtitle}</div>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
