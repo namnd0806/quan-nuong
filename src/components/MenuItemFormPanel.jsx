@@ -100,6 +100,10 @@ export default function MenuItemFormPanel({ open, item, saving, onClose, onSave 
                   <Input placeholder="Nhập giá vốn" inputMode="numeric" value={form.cost} onChange={(e) => set('cost', e.target.value.replace(/[^\d]/g, ''))} />
                 </div>
                 <div>
+                  <Label>Chi phí biến đổi (VND)</Label>
+                  <Input placeholder="Nhập chi phí biến đổi" inputMode="numeric" value={form.variable_cost || ''} onChange={(e) => set('variable_cost', e.target.value.replace(/[^\d]/g, ''))} />
+                </div>
+                <div>
                   <Label>Food Cost (%)</Label>
                   <Input value={`${fc}%`} readOnly className="bg-white/5 text-gray-400" />
                 </div>

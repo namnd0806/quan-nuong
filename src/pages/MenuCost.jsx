@@ -255,6 +255,7 @@ export default function MenuCost() {
                 <th className="p-4 font-semibold">Danh mục</th>
                 <th className="p-4 font-semibold">Giá bán</th>
                 <th className="p-4 font-semibold">Giá vốn</th>
+                <th className="p-4 font-semibold">Chi phí biến đổi</th>
                 <th className="p-4 font-semibold">Food cost</th>
                 <th className="p-4 font-semibold">Mục tiêu</th>
                 <th className="p-4 font-semibold">Lợi nhuận</th>
@@ -264,9 +265,9 @@ export default function MenuCost() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} className="p-16 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-gray-400" /></td></tr>
+                <tr><td colSpan={10} className="p-16 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-gray-400" /></td></tr>
               ) : error ? (
-                <tr><td colSpan={9} className="p-10 text-center text-sm text-red-400">Không tải được dữ liệu: {error.message}</td></tr>
+                <tr><td colSpan={10} className="p-10 text-center text-sm text-red-400">Không tải được dữ liệu: {error.message}</td></tr>
               ) : filtered.map((m) => {
                 const fc = fcOf(m)
                 const profit = m.sell - m.cost
@@ -290,6 +291,7 @@ export default function MenuCost() {
                     </td>
                     <td className="p-4 font-semibold text-foreground">{formatVND(m.sell)}</td>
                     <td className="p-4 text-muted-foreground">{formatVND(m.cost)}</td>
+                    <td className="p-4 text-gray-400">{formatVND(m.variable_cost || 0)}</td>
                     <td className="p-4">
                       <div className={cn('mb-1 text-sm font-semibold', foodCostText(fc))}>{fc.toFixed(2)}%</div>
                       <div className="h-1.5 w-20 overflow-hidden rounded-full bg-secondary">
