@@ -47,8 +47,8 @@ function foodCostText(fc) { if (fc > 33) return 'text-destructive'; if (fc > 30)
 export default function MenuCost() {
   const toast = useToast()
   const { rows: menu, loading, error, create, update, remove } = useCollection('menu_items', { notify: { label: 'món', type: 'update' } })
-  const { rows: settings } = useCollection('settings', { realtime: false })
-  const foodCostTarget = settings[0]?.food_cost_target || 30
+  const settingsHook = useCollection('settings', { realtime: false })
+  const foodCostTarget = settingsHook.rows[0]?.food_cost_target || 30
 
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
