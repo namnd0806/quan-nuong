@@ -47,6 +47,9 @@ function foodCostText(fc) { if (fc > 33) return 'text-destructive'; if (fc > 30)
 export default function MenuCost() {
   const toast = useToast()
   const { rows: menu, loading, error, create, update, remove } = useCollection('menu_items', { notify: { label: 'món', type: 'update' } })
+  const { rows: settings } = useCollection('settings', { realtime: false })
+  const foodCostTarget = settings[0]?.food_cost_target || 30
+
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -69,7 +72,7 @@ export default function MenuCost() {
 
   const STAT_CARDS = [
     { label: 'Tổng số món', value: String(stats.total), sub: 'Món trong menu', icon: Utensils, tone: 'primary' },
-    { label: 'Food cost TB', value: `${stats.avgFc.toFixed(2)}%`, sub: 'Mức mục tiêu: ≤ 30%', icon: DollarSign, tone: stats.avgFc <= 30 ? 'success' : 'warning', arrow: stats.avgFc <= 30 },
+    { label: 'Food cost TB', value: `${stats.avgFc.toFixed(2)}%`, sub: `Mức mục tiêu: ≤ ${foodCostTarget}%`, icon: DollarSign, tone: stats.avgFc <= foodCostTarget ? 'success' : 'warning', arrow: stats.avgFc <= foodCostTarget },
     { label: 'Món đạt mục tiêu', value: String(stats.ok), sub: stats.total ? `${Math.round(stats.ok / stats.total * 100)}% menu` : '0% menu', icon: Target, tone: 'warning' },
     { label: 'Món vượt mục tiêu', value: String(stats.over), sub: stats.total ? `${Math.round(stats.over / stats.total * 100)}% menu` : '0% menu', icon: AlertTriangle, tone: 'destructive' },
     { label: 'Danh mục', value: String(new Set(menu.map((m) => m.cat).filter(Boolean)).size), sub: 'Nhóm món', icon: Star, tone: 'info' },
@@ -104,7 +107,7 @@ export default function MenuCost() {
       name, value: totalCost ? +((v / totalCost) * 100).toFixed(1) : 0, color: (CAT[name] || {}).color || 'hsl(215 20% 50%)',
     }))
     const kpis = [
-      { label: 'Food cost TB', value: `${stats.avgFc.toFixed(2)}%`, sub: 'Mục tiêu: ≤ 30%', tone: stats.avgFc <= 30 ? 'text-success' : 'text-warning' },
+      { label: 'Food cost TB', value: `${stats.avgFc.toFixed(2)}%`, sub: `Mục tiêu: ≤ ${foodCostTarget}%`, tone: stats.avgFc <= foodCostTarget ? 'text-success' : 'text-warning' },
       { label: 'Tổng giá bán', value: formatVND(totalSell), sub: 'Toàn menu' },
       { label: 'Tổng giá vốn', value: formatVND(totalCost), sub: 'Toàn menu' },
       { label: 'Lợi nhuận gộp', value: formatVND(totalSell - totalCost), sub: totalSell ? `${(((totalSell - totalCost) / totalSell) * 100).toFixed(1)}% biên LN` : '', tone: 'text-success' },
@@ -118,8 +121,8 @@ export default function MenuCost() {
     const topOver = menu.filter((m) => fcOf(m) > m.target)
       .map((m) => ({ name: m.name, cat: m.cat, target: m.target, fc: `${fcOf(m).toFixed(2)}%`, diff: `+${(fcOf(m) - m.target).toFixed(2)}%`, _d: fcOf(m) - m.target }))
       .sort((a, b) => b._d - a._d).slice(0, 8)
-    return { kpis, distribution, overview, topOver }
-  }, [menu, stats])
+    return { kpis, distribution, overview, topOver, foodCostTarget }
+  }, [menu, stats, foodCostTarget])
 
   const handleSave = async ({ id, values }) => {
     setSaving(true)

@@ -40,6 +40,7 @@ export default function FoodCostReportPanel({ open, onClose, data }) {
   const distributionData = data?.distribution || distribution
   const overviewData = data?.overview || overview
   const topOverData = data?.topOver || topOver
+  const foodCostTarget = data?.foodCostTarget || 30
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent maxWidth="5xl" onClose={onClose}>
