@@ -279,16 +279,16 @@ export default function Dashboard() {
 
         <Card className="rounded-2xl border border-white/10" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-300">TỔNG TIẾN ĐỘ CÔNG VIỆC</CardTitle>
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-300">TỔNG TIẾN ĐỘ CÔNG VIỆC</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-6">
+          <CardContent className="flex flex-col gap-4">
             {progressTotal === 0 ? (
               <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">Chưa có công việc</div>
             ) : (
-              <div className="flex items-center gap-8">
+              <div className="flex items-center gap-6">
                 <div className="relative flex-shrink-0">
-                  <ResponsiveContainer width={200} height={200}>
-                    <RadialBarChart data={radialData} innerRadius="50%" outerRadius="100%" startAngle={90} endAngle={-270} barSize={14}>
+                  <ResponsiveContainer width={160} height={160}>
+                    <RadialBarChart data={radialData} innerRadius="55%" outerRadius="100%" startAngle={90} endAngle={-270} barSize={12}>
                       <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
                       <RadialBar dataKey="value" background={{ fill: 'rgba(255,255,255,0.05)' }} cornerRadius={8} />
                       <Tooltip {...chartTooltip} formatter={(v, _n, p) => [`${p?.payload?.count} · ${v}%`, p?.payload?.name]} />
@@ -300,22 +300,22 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="flex-1 space-y-3">
+                <div className="flex-1 space-y-2.5">
                   {radialData.map((item) => (
                     <div key={item.name} className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
-                        <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: item.fill }} />
+                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: item.fill }} />
                         <span className="text-sm text-gray-300">{item.name}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-base font-bold text-foreground">{item.count}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-lg font-bold text-foreground">{item.count}</span>
                         <span className="text-xs text-gray-500">({item.value}%)</span>
                       </div>
                     </div>
                   ))}
                   <Link
                     to="/checklist"
-                    className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-400 transition-colors hover:text-blue-300"
+                    className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-blue-400 transition-colors hover:text-blue-300"
                   >
                     Xem chi tiết <ArrowRight className="h-4 w-4" />
                   </Link>
