@@ -2,11 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, AreaChart, Area,
 } from 'recharts'
 import {
   Plus, Wallet, ArrowDownCircle, PieChart as PieIcon, TrendingUp,
-  Search, SlidersHorizontal, Pencil, Trash2, X, Loader2, Calendar,
+  Search, SlidersHorizontal, Pencil, Trash2, X, Loader2, Calendar, Check, X as XIcon,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -85,6 +85,7 @@ export default function Budget() {
   const [saving, setSaving] = useState(false)
   const [confirmDel, setConfirmDel] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [editingActual, setEditingActual] = useState(null) // {id, value} for inline edit
 
   const owners = useMemo(() => (members.length ? members.map((m) => m.name) : ['Nam', 'Phương']), [members])
   const budgetTotal = settingsRows[0]?.budget_total || 500000000
@@ -191,19 +192,38 @@ export default function Budget() {
     finally { setDeleting(false) }
   }
 
+  const handleSaveActual = async () => {
+    if (!editingActual) return
+    setSaving(true)
+    try {
+      const { id, value } = editingActual
+      const actualValue = Number(value) || 0
+      await update(id, { actual: actualValue })
+      setEditingActual(null)
+      toast.success('Đã cập nhật thực chi.')
+    } catch (e) {
+      toast.error('Cập nhật thất bại: ' + e.message)
+    }
+    finally { setSaving(false) }
+  }
+
+  const handleCancelActualEdit = () => {
+    setEditingActual(null)
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Ngân sách</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">Quản lý ngân sách dự kiến và chi phí mở quán</p>
+          <h1 className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">Ngân sách</h1>
+          <p className="mt-1 text-sm text-gray-400">Quản lý ngân sách dự kiến và chi phí mở quán</p>
         </div>
         <Button onClick={openAdd} className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40">
           <Plus className="h-4 w-4" /> Thêm khoản chi
         </Button>
       </div>
 
-      {/* Summary cards */}
+      {/* Summary cards - Compact version */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {summary.map((s, i) => {
           const Icon = s.icon
@@ -238,15 +258,15 @@ export default function Budget() {
         })}
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <Card className="rounded-2xl border border-white/10 lg:col-span-2" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
-          <CardHeader><CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-300">DỰ TOÁN VS THỰC CHI (TRIỆU Đ)</CardTitle></CardHeader>
+      {/* Charts - Compact version */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="rounded-2xl border border-white/10" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
+          <CardHeader className="pb-3"><CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-300">DỰ TOÁN VS THỰC CHI (TRIỆU Đ)</CardTitle></CardHeader>
           <CardContent>
             {chartData.length === 0 ? (
-              <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">Chưa có dữ liệu</div>
+              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Chưa có dữ liệu</div>
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="name" tick={{ fill: 'rgba(148,163,184,0.8)', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -261,24 +281,24 @@ export default function Budget() {
         </Card>
 
         <Card className="rounded-2xl border border-white/10" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
-          <CardHeader><CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-300">PHÂN BỔ NGÂN SÁCH</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-300">PHÂN BỔ NGÂN SÁCH</CardTitle></CardHeader>
           <CardContent>
             {allocation.length === 0 ? (
-              <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">Chưa có dữ liệu</div>
+              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Chưa có dữ liệu</div>
             ) : (
-              <div className="flex flex-col items-center gap-4">
-                <ResponsiveContainer width="100%" height={180}>
+              <div className="flex flex-col items-center gap-3">
+                <ResponsiveContainer width="100%" height={140}>
                   <PieChart>
-                    <Pie data={allocation} cx="50%" cy="50%" innerRadius={52} outerRadius={76} paddingAngle={3} dataKey="value" stroke="none">
+                    <Pie data={allocation} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={3} dataKey="value" stroke="none">
                       {allocation.map((a, i) => <Cell key={i} fill={a.color} />)}
                     </Pie>
                     <Tooltip {...chartTooltip} formatter={(v) => formatVND(v)} />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="w-full space-y-2">
+                <div className="w-full space-y-1.5">
                   {allocation.map((a) => (
                     <div key={a.name} className="flex items-center gap-2 text-xs">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: a.color }} />
+                      <span className="h-2 w-2 rounded-full" style={{ background: a.color }} />
                       <span className="flex-1 text-gray-300">{a.name}</span>
                       <span className="font-semibold text-foreground">{a.pct.toFixed(0)}%</span>
                     </div>
@@ -373,7 +393,50 @@ export default function Budget() {
                       )}
                     </td>
                     <td className="p-4 font-semibold text-foreground">{formatVND(e.planned)}</td>
-                    <td className="p-4 text-gray-300">{formatVND(e.actual)}</td>
+                    <td className="p-4" onClick={(ev) => ev.stopPropagation()}>
+                      {editingActual?.id === e.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            value={editingActual.value}
+                            onChange={(ev) => setEditingActual({ id: e.id, value: ev.target.value })}
+                            onKeyDown={(ev) => {
+                              if (ev.key === 'Enter') handleSaveActual()
+                              if (ev.key === 'Escape') handleCancelActualEdit()
+                            }}
+                            className="h-8 w-32 rounded-lg border-white/10 bg-white/5 text-sm"
+                            autoFocus
+                            disabled={saving}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-lg text-green-400 hover:bg-green-500/10"
+                            onClick={handleSaveActual}
+                            disabled={saving}
+                          >
+                            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-lg text-gray-400 hover:bg-white/10"
+                            onClick={handleCancelActualEdit}
+                            disabled={saving}
+                          >
+                            <XIcon className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-gray-300 transition-colors hover:bg-white/5 hover:text-foreground"
+                          onClick={() => setEditingActual({ id: e.id, value: e.actual })}
+                        >
+                          <span>{formatVND(e.actual)}</span>
+                          <Pencil className="h-3 w-3 text-gray-500" />
+                        </button>
+                      )}
+                    </td>
                     <td className="p-4">
                       {e.owner ? (
                         <span className="inline-flex items-center gap-1.5">
