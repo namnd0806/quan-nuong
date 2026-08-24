@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ClipboardCheck, Wallet, UtensilsCrossed,
   Store, Bell, Menu, X, Flame, Search, Settings, Sun, Moon,
   CheckCircle2, PencilLine, Wallet as WalletIcon, Store as StoreIcon,
-  StickyNote, LogOut, Calendar,
+  StickyNote, LogOut, Calendar, Maximize, Minimize,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -174,6 +174,44 @@ function timeAgo(iso) {
   return `${Math.floor(diff / 86400)} ngày trước`
 }
 
+function FullscreenToggle() {
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen()
+        setIsFullscreen(true)
+      } else {
+        await document.exitFullscreen()
+        setIsFullscreen(false)
+      }
+    } catch (err) {
+      console.error('Fullscreen error:', err)
+    }
+  }
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="rounded-xl"
+      onClick={toggleFullscreen}
+      title={isFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
+    >
+      {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+    </Button>
+  )
+}
+
 function NotificationBell() {
   const [open, setOpen] = useState(false)
   const { rows: notifications } = useCollection('notifications', { orderBy: 'created_at', ascending: false })
@@ -332,6 +370,7 @@ export default function Layout({ children }) {
             </Button>
 
             <ThemeToggle />
+            <FullscreenToggle />
             <NotificationBell />
 
             <div className="h-6 w-px bg-border/50" />
