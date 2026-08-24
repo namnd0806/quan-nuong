@@ -202,24 +202,29 @@ export default function Dashboard() {
               <Card className="group relative overflow-hidden rounded-2xl border border-white/10 transition-all hover:border-white/20 hover:shadow-2xl" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
                 <div className={cn('pointer-events-none absolute inset-0 bg-gradient-to-br opacity-40', stat.gradient)} />
                 <CardContent className="relative p-5">
-                  <div className="flex items-start justify-between">
-                    <div
-                      className="flex h-14 w-14 items-center justify-center rounded-xl shadow-lg"
-                      style={{ background: stat.iconBg, border: `1px solid ${stat.iconBorder}` }}
-                    >
-                      <Icon className={cn('h-7 w-7', stat.textColor)} />
-                    </div>
+                  {/* Icon at top */}
+                  <div
+                    className="inline-flex h-12 w-12 items-center justify-center rounded-xl shadow-lg"
+                    style={{ background: stat.iconBg, border: `1px solid ${stat.iconBorder}` }}
+                  >
+                    <Icon className={cn('h-6 w-6', stat.textColor)} />
                   </div>
+
+                  {/* Content */}
                   <div className="mt-4">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{stat.title}</span>
-                    <div className="mt-2 text-3xl font-bold text-foreground">{stat.value}</div>
+                    <div className="mt-1.5 text-2xl font-bold text-foreground">{stat.value}</div>
                     <div className="mt-1 text-xs text-gray-400">{stat.sub}</div>
-                    {stat.trend && (
-                      <div className={cn('mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold', stat.textColor)} style={{ background: stat.iconBg }}>
-                        {stat.trend}
-                      </div>
-                    )}
                   </div>
+
+                  {/* Badge at bottom */}
+                  {stat.trend && (
+                    <div className="mt-3">
+                      <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold', stat.textColor)} style={{ background: stat.iconBg }}>
+                        {stat.trend}
+                      </span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
