@@ -50,6 +50,15 @@ export default function MenuCost() {
   const settingsHook = useCollection('settings', { realtime: false })
   const foodCostTarget = settingsHook.rows[0]?.food_cost_target || 30
 
+  // Debug log
+  React.useEffect(() => {
+    console.log('🔍 Debug MenuCost:', {
+      settingsRows: settingsHook.rows,
+      firstSetting: settingsHook.rows[0],
+      foodCostTarget,
+    })
+  }, [settingsHook.rows, foodCostTarget])
+
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
