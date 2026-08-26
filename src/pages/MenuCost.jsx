@@ -50,16 +50,6 @@ export default function MenuCost() {
   const settingsHook = useCollection('settings', { orderBy: 'id', ascending: true, realtime: false })
   const foodCostTarget = settingsHook.rows[0]?.food_cost_target || 30
 
-  // Debug log
-  React.useEffect(() => {
-    console.log('🔍 Debug MenuCost:', {
-      settingsRows: settingsHook.rows,
-      firstSetting: settingsHook.rows[0],
-      foodCostTarget,
-      error: settingsHook.error,
-    })
-  }, [settingsHook.rows, foodCostTarget])
-
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -70,7 +60,13 @@ export default function MenuCost() {
   const [confirmDel, setConfirmDel] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  const fcOf = (m) => (m.sell > 0 ? (m.cost / m.sell) * 100 : 0)
+  // Tổng chi phí biến đổi của 1 món (từ mảng JSONB variable_costs)
+  const varTotalOf = (m) => (Array.isArray(m.variable_costs) ? m.variable_costs.reduce((s, vc) => s + (Number(vc.cost) || 0), 0) : 0)
+  const varCountOf = (m) => (Array.isArray(m.variable_costs) ? m.variable_costs.filter((vc) => vc && vc.name).length : 0)
+  // Food cost = (giá vốn + chi phí biến đổi) / giá bán
+  const totalCostOf = (m) => (Number(m.cost) || 0) + varTotalOf(m)
+  const fcOf = (m) => (m.sell > 0 ? (totalCostOf(m) / m.sell) * 100 : 0)
+  const profitOf = (m) => (Number(m.sell) || 0) - totalCostOf(m)
 
   const stats = useMemo(() => {
     const total = menu.length
@@ -270,7 +266,9 @@ export default function MenuCost() {
                 <tr><td colSpan={10} className="p-10 text-center text-sm text-red-400">Không tải được dữ liệu: {error.message}</td></tr>
               ) : filtered.map((m) => {
                 const fc = fcOf(m)
-                const profit = m.sell - m.cost
+                const profit = profitOf(m)
+                const varTotal = varTotalOf(m)
+                const varCount = varCountOf(m)
                 const cat = CAT[m.cat] || { icon: '🍽️', color: 'hsl(215 20% 50%)' }
                 const status = fc > m.target ? 'over' : 'ok'
                 return (
@@ -291,7 +289,10 @@ export default function MenuCost() {
                     </td>
                     <td className="p-4 font-semibold text-foreground">{formatVND(m.sell)}</td>
                     <td className="p-4 text-muted-foreground">{formatVND(m.cost)}</td>
-                    <td className="p-4 text-gray-400">{formatVND(m.variable_cost || 0)}</td>
+                    <td className="p-4">
+                      <div className="font-medium text-gray-300">{formatVND(varTotal)}</div>
+                      {varCount > 0 && <div className="text-xs text-gray-500">{varCount} khoản</div>}
+                    </td>
                     <td className="p-4">
                       <div className={cn('mb-1 text-sm font-semibold', foodCostText(fc))}>{fc.toFixed(2)}%</div>
                       <div className="h-1.5 w-20 overflow-hidden rounded-full bg-secondary">
@@ -299,7 +300,7 @@ export default function MenuCost() {
                       </div>
                     </td>
                     <td className="p-4 text-muted-foreground">≤ {m.target}%</td>
-                    <td className="p-4 font-semibold text-success">{formatVND(profit)}</td>
+                    <td className={cn('p-4 font-semibold', profit >= 0 ? 'text-success' : 'text-destructive')}>{formatVND(profit)}</td>
                     <td className="p-4"><Badge variant={STATUS[status].variant}>{STATUS[status].label}</Badge></td>
                     <td className="p-4">
                       <div className="flex items-center gap-1">
@@ -311,7 +312,7 @@ export default function MenuCost() {
                 )
               })}
               {!loading && !error && filtered.length === 0 && (
-                <tr><td colSpan={9} className="p-10 text-center text-sm text-muted-foreground">Không tìm thấy món nào.</td></tr>
+                <tr><td colSpan={10} className="p-10 text-center text-sm text-muted-foreground">Không tìm thấy món nào.</td></tr>
               )}
             </tbody>
           </table>

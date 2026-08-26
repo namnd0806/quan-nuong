@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ClipboardCheck, Wallet, UtensilsCrossed,
   Store, Bell, Menu, X, Flame, Search, Settings, Sun, Moon,
   CheckCircle2, PencilLine, Wallet as WalletIcon, Store as StoreIcon,
-  StickyNote, LogOut, Calendar, Maximize, Minimize,
+  FileText, LogOut, Calendar, Maximize, Minimize, ChevronRight, ChevronDown,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,7 @@ const menuItems = [
   { path: '/budget', icon: Wallet, label: 'Ngân sách' },
   { path: '/menu-cost', icon: UtensilsCrossed, label: 'Menu & Cost' },
   { path: '/suppliers', icon: Store, label: 'Nhà cung cấp' },
-  { path: '/notes', icon: StickyNote, label: 'Ghi chú' },
+  { path: '/notes', icon: FileText, label: 'Ghi chú' },
 ]
 
 const pageTitles = {
@@ -45,23 +45,31 @@ const notifIcon = {
 function SidebarContent({ onNavigate }) {
   const { profile, user, signOut } = useAuth()
   const name = profile?.name || user?.email?.split('@')[0] || 'Người dùng'
+  const role = profile?.role || 'Chủ quán'
   const initial = name.charAt(0).toUpperCase()
 
   return (
     <div className="flex h-full flex-col">
-      {/* Logo header */}
-      <div className="flex items-center gap-3 border-b border-border/40 px-5 py-5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/30">
-          <Flame className="h-6 w-6 text-white" />
+      {/* Logo header — Nướng Chill brand (global final) */}
+      <div className="flex items-center gap-3 border-b border-white/5 px-5 py-4">
+        <div
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-lg"
+          style={{ background: 'radial-gradient(circle at 30% 25%, #1e293b, #0b1220)', border: '1px solid rgba(251,146,60,0.25)' }}
+        >
+          <Flame className="h-6 w-6" style={{ color: '#fb923c', fill: '#f59e0b' }} />
         </div>
-        <div className="flex-1">
-          <div className="text-base font-bold leading-tight text-foreground">QUÁN NƯỚNG</div>
-          <div className="text-xs font-medium text-orange-400">Pre-opening</div>
+        <div className="flex-1 leading-none">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg font-extrabold tracking-tight text-white">Nướng</span>
+            <span className="text-lg font-extrabold tracking-tight text-orange-400">Chill</span>
+            <span className="ml-0.5 text-[7px] font-semibold uppercase leading-[1.1] tracking-wider text-gray-500">FOOD<br/>DRINKS<br/>MOOD</span>
+          </div>
+          <div className="mt-1 text-[11px] font-semibold text-orange-400/90">Pre-opening</div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1.5 overflow-y-auto p-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {menuItems.map((item) => {
           const Icon = item.icon
           return (
@@ -86,15 +94,16 @@ function SidebarContent({ onNavigate }) {
                       layoutId="nav-active"
                       className="absolute inset-0 -z-10 rounded-xl"
                       style={{
-                        background: 'linear-gradient(135deg, rgba(59,130,246,0.3), rgba(99,102,241,0.2))',
-                        boxShadow: '0 0 20px rgba(59,130,246,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
-                        border: '1px solid rgba(59,130,246,0.4)',
+                        background: 'linear-gradient(135deg, rgba(59,130,246,0.28), rgba(99,102,241,0.16))',
+                        boxShadow: '0 0 18px rgba(59,130,246,0.25), inset 0 1px 0 rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(59,130,246,0.45)',
                       }}
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}
-                  <Icon className="h-5 w-5 shrink-0" />
-                  <span>{item.label}</span>
+                  <Icon className="h-[22px] w-[22px] shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
+                  <span className="flex-1">{item.label}</span>
+                  {isActive && <ChevronRight className="h-4 w-4 shrink-0 text-blue-300" />}
                 </>
               )}
             </NavLink>
@@ -103,20 +112,20 @@ function SidebarContent({ onNavigate }) {
       </nav>
 
       {/* Settings & User */}
-      <div className="border-t border-border/40 p-3">
+      <div className="border-t border-white/5 p-3">
         <NavLink
           to="/settings"
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
-              'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all mb-3',
+              'mb-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all',
               isActive
-                ? 'bg-white/5 text-gray-200 border border-border/30'
+                ? 'bg-white/5 text-gray-200 border border-white/10'
                 : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
             )
           }
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="h-[22px] w-[22px]" strokeWidth={1.8} />
           <span>Cài đặt</span>
         </NavLink>
 
@@ -124,15 +133,15 @@ function SidebarContent({ onNavigate }) {
           <DropdownMenuTrigger asChild>
             <button className="flex w-full items-center gap-3 rounded-xl p-2.5 transition-all hover:bg-white/5">
               <Avatar className="h-9 w-9">
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
+                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-semibold text-white">
                   {initial}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1 text-left">
                 <div className="truncate text-sm font-semibold text-foreground">{name}</div>
-                <div className="truncate text-xs text-gray-400">Chủ quán</div>
+                <div className="truncate text-xs text-gray-400">{role}</div>
               </div>
-              <LogOut className="h-4 w-4 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100" />
+              <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
@@ -353,27 +362,27 @@ export default function Layout({ children }) {
             <Menu className="h-5 w-5" />
           </Button>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2.5">
             {/* Search bar */}
-            <div className="hidden items-center gap-2 rounded-xl border border-border/50 bg-white/5 px-4 py-2 backdrop-blur-sm transition-all focus-within:border-blue-500/50 focus-within:bg-white/10 sm:flex">
+            <div className="hidden h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3.5 backdrop-blur-sm transition-all focus-within:border-blue-500/50 focus-within:bg-white/10 sm:flex">
               <Search className="h-4 w-4 text-gray-400" />
               <input
                 placeholder="Tìm kiếm..."
-                className="w-32 bg-transparent text-sm text-foreground outline-none placeholder:text-gray-500 md:w-48"
+                className="w-32 bg-transparent text-sm text-foreground outline-none placeholder:text-gray-500 md:w-44"
               />
             </div>
 
             {/* Date display */}
-            <Button variant="ghost" size="sm" className="hidden gap-2 rounded-xl text-xs text-muted-foreground hover:text-foreground md:inline-flex">
-              <Calendar className="h-4 w-4" />
+            <div className="hidden h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3.5 text-sm text-gray-300 md:flex">
+              <Calendar className="h-4 w-4 text-gray-400" />
               {today}
-            </Button>
+            </div>
 
             <ThemeToggle />
             <FullscreenToggle />
             <NotificationBell />
 
-            <div className="h-6 w-px bg-border/50" />
+            <div className="mx-0.5 h-6 w-px bg-white/10" />
 
             <HeaderUserAvatar />
           </div>
