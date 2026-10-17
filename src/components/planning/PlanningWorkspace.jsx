@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Search, ChevronDown, ChevronUp, Check, Settings2, RefreshCw, Pencil, Trash2, Wallet, Calendar, Loader2, Link as LinkIcon } from 'lucide-react'
 import { useCollection } from '@/hooks/useCollection'
@@ -40,6 +40,8 @@ export default function PlanningWorkspace({ kind }) {
   const [groupOpen, setGroupOpen] = useState(false)
   const [groupDraft, setGroupDraft] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const syncLock = useRef(false)
   const [uploading, setUploading] = useState(false)
   const [formError, setFormError] = useState('')
   const [groupError, setGroupError] = useState('')
@@ -71,6 +73,23 @@ export default function PlanningWorkspace({ kind }) {
   const disabled = busy || uploading
   const set = (key, value) => setDraft((d) => ({ ...d, [key]: value }))
   const refresh = async () => { await Promise.all([tasks.refetch(), budgets.refetch(), payments.refetch(), categories.refetch(), members.refetch(), events.refetch()]) }
+  const syncNow = async () => {
+    if (syncLock.current) return
+    syncLock.current = true
+    setSyncing(true)
+    const collections = [tasks, budgets, payments, categories, members, events]
+    const labels = ['công việc', 'ngân sách', 'thanh toán', 'nhóm', 'thành viên', 'lịch sử']
+    try {
+      const results = await Promise.allSettled(collections.map((collection) => Promise.resolve().then(() => collection.refetch())))
+      const failed = results.flatMap((result, index) => result.status === 'rejected' || result.value?.error ? [labels[index]] : [])
+      if (failed.length) toast.error(`Chưa tải được ${failed.join(', ')}. Vui lòng thử lại.`)
+      else toast.success('Đã đồng bộ dữ liệu mới nhất.')
+    } finally {
+      syncLock.current = false
+      setSyncing(false)
+    }
+  }
+
   const report = (error) => toast.error(error.message || 'Không thực hiện được. Hãy thử lại.')
   const openNew = (group) => { setFormError(''); setDraft(emptyRecord(kind, group || '')) }
   const openRecord = (row) => {
@@ -156,8 +175,8 @@ export default function PlanningWorkspace({ kind }) {
   return <div className={`pw ${task ? 'pw-tasks' : 'pw-budget'}`}>
     <header className="pw-titlebar pw-compact-header"><h1>{task ? 'Công việc' : 'Ngân sách'}</h1><button className="pw-primary" aria-label={task ? 'Thêm công việc' : 'Thêm khoản ngân sách'} onClick={() => openNew()}><Plus size={19} /><span className="pw-add-label">Thêm<span className="pw-desktop-label"> {task ? 'công việc' : 'ngân sách'}</span></span></button></header>
     {task ? <div className="pw-stats"><Stat label="Cần làm" value={stats.todo} /><Stat label="Đang làm" value={stats.doing} tone="amber" /><Stat label="Quá hạn" value={stats.overdue} tone="red" /></div> : <><div className="pw-stats budget" style={{ '--people-count': members.rows.length }}><Stat label="Tổng dự toán" value={money(summary.planned)} tone="blue" /><Stat label="Tổng thực chi" value={money(summary.actual)} tone="teal" />{summary.people.map((p, index) => <Stat key={p.id} label={`${personName(p.name)} đã chi`} value={money(p.spent)} tone={`person person-${index % 2}`} />)}</div>{summary.unassigned !== 0 && <button className={`pw-unassigned ${state === 'unassigned' ? 'active' : ''}`} aria-pressed={state === 'unassigned'} onClick={() => { setSearch(''); setState(state === 'unassigned' ? 'all' : 'unassigned'); setExpanded({}) }}><span>Chưa rõ người trả <strong>{money(summary.unassigned)}</strong></span><span>{state === 'unassigned' ? 'Bỏ lọc' : 'Xem khoản chi'} <ChevronDown size={14} /></span></button>}</>}
-    <div className="pw-toolbar"><div className="pw-search"><Search size={18} /><input aria-label="Tìm kiếm" placeholder={task ? 'Tìm công việc…' : 'Tìm khoản chi…'} value={search} onChange={(e) => setSearch(e.target.value)} /></div><div className="pw-filters">{task ? <>{[['all','Tất cả'],['mine','Của tôi'],['both','Cả hai']].map(([key,label]) => <button className={`pw-chip ${scope === key ? 'active' : ''}`} aria-pressed={scope === key} key={key} onClick={() => setScope(key)}>{label}</button>)}<select className="pw-filter-select" aria-label="Lọc trạng thái" value={state} onChange={(e) => setState(e.target.value)}><option value="all">Mọi trạng thái</option>{Object.entries(taskStates).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></> : [['all','Tất cả'],['unpaid','Còn thanh toán']].map(([key,label]) => <button key={key} onClick={() => setState(key)} className={`pw-chip ${state === key ? 'active' : ''}`} aria-pressed={state === key}>{label}</button>)}</div><div className="pw-tool-actions"><button className="pw-secondary pw-manage-groups" aria-label="Quản lý nhóm" title="Quản lý nhóm" onClick={openGroupManager}><Settings2 size={17} /><span>Nhóm</span></button><button className="pw-reload" onClick={refresh} disabled={busy} aria-label="Tải lại dữ liệu" title="Tải lại dữ liệu"><RefreshCw size={17} /></button></div></div>
-    {error && <div role="alert" className="pw-error">Không tải được dữ liệu: {error.message} <button onClick={refresh}>Thử lại</button></div>}
+    <div className="pw-toolbar"><div className="pw-search"><Search size={18} /><input aria-label="Tìm kiếm" placeholder={task ? 'Tìm công việc…' : 'Tìm khoản chi…'} value={search} onChange={(e) => setSearch(e.target.value)} /></div><div className="pw-filters">{task ? <>{[['all','Tất cả'],['mine','Của tôi'],['both','Cả hai']].map(([key,label]) => <button className={`pw-chip ${scope === key ? 'active' : ''}`} aria-pressed={scope === key} key={key} onClick={() => setScope(key)}>{label}</button>)}<select className="pw-filter-select" aria-label="Lọc trạng thái" value={state} onChange={(e) => setState(e.target.value)}><option value="all">Mọi trạng thái</option>{Object.entries(taskStates).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></> : [['all','Tất cả'],['unpaid','Còn thanh toán']].map(([key,label]) => <button key={key} onClick={() => setState(key)} className={`pw-chip ${state === key ? 'active' : ''}`} aria-pressed={state === key}>{label}</button>)}</div><div className="pw-tool-actions"><button className="pw-secondary pw-manage-groups" aria-label="Quản lý nhóm" title="Quản lý nhóm" onClick={openGroupManager}><Settings2 size={17} /><span>Nhóm</span></button><button className="pw-reload" onClick={syncNow} disabled={busy || syncing} aria-busy={syncing} aria-label={syncing ? "Đang đồng bộ dữ liệu" : "Tải lại dữ liệu"} title={syncing ? "Đang đồng bộ…" : "Tải lại dữ liệu"}><RefreshCw size={17} className={syncing ? "animate-spin" : undefined} /></button></div></div>
+    {error && <div role="alert" className="pw-error">Không tải được dữ liệu: {error.message} <button onClick={syncNow} disabled={syncing}>Thử lại</button></div>}
     {loading ? <div className="pw-loading"><Loader2 className="animate-spin" size={21} />Đang đồng bộ…</div> : <div className="pw-groups">{groups.map((g, i) => {
       const rows = g.records.filter(matches)
       if (!rows.length && (search || state !== 'all' || scope !== 'all')) return null

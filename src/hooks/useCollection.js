@@ -25,14 +25,16 @@ export function useCollection(table, { orderBy = 'created_at', ascending = false
         if (filterColumn && filterValue != null) query = query.eq(filterColumn, filterValue)
         const take = limit ? Math.min(pageSize, limit - offset) : pageSize
         const { data, error } = await query.range(offset, offset + take - 1)
-        if (version !== requestVersion.current) return
+        if (version !== requestVersion.current) return { error: error || null }
         if (error) throw error
         collected.push(...(data || []))
         if ((data || []).length < take || (limit && collected.length >= limit)) break
       }
       setRows([...new Map(collected.map((row) => [row.id, row])).values()]); setError(null)
+      return { error: null }
     } catch (error) {
       if (version === requestVersion.current) setError(error)
+      return { error }
     } finally {
       if (version === requestVersion.current) setLoading(false)
     }
