@@ -1,10 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { ArrowLeft, X, Loader2, Paperclip, Trash2, Folder, Wrench, Armchair, Refrigerator, Utensils, FileText, Users, Leaf, Megaphone, Wallet, ClipboardCheck, Clock3, CircleAlert, TrendingUp, CircleDollarSign } from 'lucide-react'
+import { ArrowLeft, X, Loader2, Paperclip, Trash2, Folder, Wrench, Armchair, Refrigerator, Utensils, FileText, Users, Leaf, Megaphone, Wallet, ClipboardCheck, Clock3, CircleAlert, TrendingUp, CircleDollarSign, Store, Building2, Hammer, Paintbrush, Ruler, PlugZap, Droplets, Lightbulb, Fan, AirVent, CookingPot, ChefHat, Beef, Fish, Carrot, Coffee, Wine, ShoppingBasket, Package, Truck, Warehouse, Monitor, Printer, Wifi, Camera, ShieldCheck, Receipt, Landmark, CalendarDays, ClipboardList, Sparkles, Brush, Ticket, Smartphone, Globe, HeartHandshake, Music, Sofa, DoorOpen } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { attachmentList } from '@/lib/planning-model'
 
-export const groupIcons = { folder: Folder, tools: Wrench, chair: Armchair, equipment: Refrigerator, food: Utensils, document: FileText, people: Users, leaf: Leaf, marketing: Megaphone, cash: Wallet }
+export const iconSections = [
+  { name: 'Mặt bằng & thi công', tone: 'blue', items: [
+    ['store','Mặt bằng',Store],['building','Công trình',Building2],['tools','Thi công',Wrench],['hammer','Sửa chữa',Hammer],['paint','Sơn sửa',Paintbrush],['ruler','Thiết kế',Ruler],['electric','Điện',PlugZap],['water','Nước',Droplets],['light','Chiếu sáng',Lightbulb],['door','Cửa & cổng',DoorOpen],
+  ] },
+  { name: 'Thiết bị & không gian', tone: 'violet', items: [
+    ['chair','Nội thất',Armchair],['sofa','Bàn ghế',Sofa],['equipment','Thiết bị',Refrigerator],['fan','Quạt',Fan],['vent','Hút khói',AirVent],['wifi','Mạng Wi-Fi',Wifi],['camera','Camera',Camera],['monitor','Máy tính',Monitor],['printer','Máy in',Printer],['leaf','Cây xanh',Leaf],['music','Âm thanh',Music],
+  ] },
+  { name: 'Bếp & nguyên liệu', tone: 'amber', items: [
+    ['food','Món ăn',Utensils],['pot','Dụng cụ bếp',CookingPot],['chef','Bếp',ChefHat],['beef','Thịt',Beef],['fish','Hải sản',Fish],['vegetable','Rau củ',Carrot],['coffee','Đồ uống',Coffee],['wine','Bia & rượu',Wine],['basket','Mua sắm',ShoppingBasket],
+  ] },
+  { name: 'Vận hành & tài chính', tone: 'green', items: [
+    ['folder','Thư mục',Folder],['document','Giấy tờ',FileText],['people','Nhân sự',Users],['cash','Tài chính',Wallet],['receipt','Hóa đơn',Receipt],['bank','Ngân hàng',Landmark],['package','Hàng hóa',Package],['warehouse','Kho',Warehouse],['truck','Giao hàng',Truck],['calendar','Lịch',CalendarDays],['checklist','Quy trình',ClipboardList],['shield','An toàn',ShieldCheck],['clean','Vệ sinh',Brush],
+  ] },
+  { name: 'Marketing & khai trương', tone: 'pink', items: [
+    ['marketing','Marketing',Megaphone],['sparkles','Khai trương',Sparkles],['ticket','Ưu đãi',Ticket],['phone','Mạng xã hội',Smartphone],['globe','Website',Globe],['partner','Đối tác',HeartHandshake],
+  ] },
+]
+export const groupIcons = Object.fromEntries(iconSections.flatMap((section) => section.items.map(([key, , Icon]) => [key, Icon])))
 const legacyIcons = { '🏗️': 'tools', '🎨': 'tools', '🪑': 'chair', '🍽️': 'food', '📣': 'marketing', '⚙️': 'tools', '📦': 'folder', Building2: 'tools', PencilRuler: 'tools', Armchair: 'chair', UtensilsCrossed: 'food', Megaphone: 'marketing', Settings2: 'tools' }
 export function GroupIcon({ name }) { const Icon = groupIcons[name] || groupIcons[legacyIcons[name]] || Folder; return <Icon size={20} strokeWidth={1.7} /> }
 export function Pill({ value, children }) { return <span className={`pw-pill ${['done','paid','low'].includes(value) ? 'green' : ['waiting','partial','high'].includes(value) ? 'amber' : ['overdue','urgent'].includes(value) ? 'red' : value === 'doing' ? 'blue' : ''}`}>{children}</span> }

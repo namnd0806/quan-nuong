@@ -8,13 +8,12 @@ import { supabase } from '@/lib/supabase'
 import { formatVND } from '@/lib/utils'
 import { localDate, isOverdue } from '@/lib/data-flow'
 import { taskStates, priorities, budgetStates, planningGroups, spendingSummary, paymentTotal, personName, personKey, taskMatches, validMoney } from '@/lib/planning-model'
-import { Attachments, PlanningPanel, PlanningNav, GroupIcon, groupIcons, Field, Stat, Pill, BusyButton, History } from './PlanningParts'
+import { Attachments, PlanningPanel, PlanningNav, GroupIcon, iconSections, Field, Stat, Pill, BusyButton, History } from './PlanningParts'
 import './planning.css'
 
 const money = (value) => formatVND(Number(value || 0))
 const compact = (value) => `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(Number(value || 0) / 1000000)}tr`
 const date = (value) => value ? value.split('-').reverse().join('/') : 'Chưa đặt hạn'
-const iconNames = { folder:'Thư mục',tools:'Thi công',chair:'Nội thất',equipment:'Thiết bị',food:'Món ăn',document:'Giấy tờ',people:'Nhân sự',leaf:'Cây xanh',marketing:'Marketing',cash:'Tài chính' }
 const paymentState = (item, actual) => item.status === 'paid' ? 'paid' : actual > 0 ? 'partial' : 'pending'
 const emptyRecord = (kind, group = '') => ({ id: crypto.randomUUID(), title: '', group, assignee: '', status: kind === 'tasks' ? 'todo' : 'pending', priority: 'medium', deadline: '', description: '', linked_budget_id: '', attachments: [], planned: '', agreed_amount: '', owner: '', note: '' })
 
@@ -211,7 +210,7 @@ export default function PlanningWorkspace({ kind }) {
     </PlanningPanel>
 
     <PlanningPanel open={groupOpen} title="Quản lý nhóm" onClose={() => setGroupOpen(false)} busy={busy} footer={<><button className="pw-secondary" disabled={busy} onClick={() => setGroupDraft({ id: crypto.randomUUID(), name:'', icon:'folder' })}>Nhóm mới</button><BusyButton busy={busy} form="planning-group-form" type="submit">{groupDraft?.created_at ? 'Lưu nhóm' : 'Tạo nhóm'}</BusyButton></>}>
-      <p className="pw-muted" style={{ marginBottom:16 }}>Nhóm dùng chung cho công việc và ngân sách. Nhóm mới tự xuất hiện trong danh sách chọn.</p><div className="pw-group-manager-list">{categories.rows.map((g) => <button key={g.id} onClick={() => { setGroupDraft(g); setGroupError('') }}><GroupIcon name={g.icon} /><span>{g.name}</span><Pencil size={13} /></button>)}</div>{groupDraft && <form id="planning-group-form" className="pw-edit-form pw-group-form" onSubmit={saveGroup}><div className="pw-form-grid"><Field label="Tên nhóm *" full><input required maxLength={120} value={groupDraft.name} onChange={(e) => setGroupDraft((g) => ({ ...g, name:e.target.value }))} placeholder="Ví dụ: Mặt bằng & thi công" /></Field><Field label="Biểu tượng" full><div className="pw-icon-grid">{Object.keys(groupIcons).map((key) => <button type="button" aria-pressed={groupDraft.icon === key} key={key} className={groupDraft.icon === key ? 'selected' : ''} onClick={() => setGroupDraft((g) => ({ ...g, icon:key }))}><GroupIcon name={key} /><span>{iconNames[key]}</span></button>)}</div></Field></div>{groupError && <p className="pw-error" role="alert">{groupError}</p>}</form>}
+      <div className="pw-group-manager-list">{categories.rows.map((g) => <button key={g.id} onClick={() => { setGroupDraft(g); setGroupError('') }}><GroupIcon name={g.icon} /><span>{g.name}</span><Pencil size={13} /></button>)}</div>{groupDraft && <form id="planning-group-form" className="pw-edit-form pw-group-form" onSubmit={saveGroup}><div className="pw-form-grid"><Field label="Tên nhóm *" full><input required maxLength={120} value={groupDraft.name} onChange={(e) => setGroupDraft((g) => ({ ...g, name:e.target.value }))} placeholder="Ví dụ: Mặt bằng & thi công" /></Field><Field label="Biểu tượng" full><div className="pw-icon-picker">{iconSections.map((section) => <section className={`pw-icon-section ${section.tone}`} key={section.name}><h4>{section.name}</h4><div className="pw-icon-grid">{section.items.map(([key, label]) => <button type="button" aria-label={label} title={label} aria-pressed={groupDraft.icon === key} key={key} className={groupDraft.icon === key ? 'selected' : ''} onClick={() => setGroupDraft((g) => ({ ...g, icon:key }))}><GroupIcon name={key} /><span>{label}</span></button>)}</div></section>)}</div></Field></div>{groupError && <p className="pw-error" role="alert">{groupError}</p>}</form>}
     </PlanningPanel>
 
     <PlanningPanel open={Boolean(confirm)} title={confirm?.type === 'void' ? 'Hủy khoản chi' : 'Xóa bản ghi'} busy={busy} onClose={() => setConfirm(null)} footer={<><button className="pw-secondary" disabled={busy} onClick={() => setConfirm(null)}>Quay lại</button><BusyButton busy={busy} type="submit" form="planning-confirm-form">Xác nhận</BusyButton></>}>
