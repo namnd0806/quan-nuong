@@ -87,7 +87,7 @@ async function saveSettings(patch) {
 
 export default function Settings() {
   const [tab, setTab] = useState('overview')
-  const settings = useCollection('settings', { orderBy: 'id', ascending: true, realtime: false })
+  const settings = useCollection('settings', { orderBy: 'id', ascending: true })
   const members = useCollection('members', { orderBy: 'sort', ascending: true, notify: { label: 'thành viên', type: 'update' } })
   const categories = useCollection('main_categories', { orderBy: 'sort', ascending: true, notify: { label: 'hạng mục', type: 'update' } })
   const lookups = useCollection('lookups', { orderBy: 'sort', ascending: true })

@@ -42,7 +42,7 @@ function fmtDate(iso) {
 
 export default function Suppliers() {
   const toast = useToast()
-  const { rows: suppliers, loading, error, create, update, remove } = useCollection('suppliers', { notify: { label: 'nhà cung cấp', type: 'supplier' } })
+  const { rows: suppliers, loading, error, refetch: refetchSuppliers, update, remove } = useCollection('suppliers', { notify: { label: 'nhà cung cấp', type: 'supplier' } })
   const { rows: products, refetch: refetchProducts } = useCollection('supplier_products', { orderBy: 'created_at', ascending: true })
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
@@ -93,18 +93,11 @@ export default function Suppliers() {
     setSaving(true)
     try {
       const payload = { ...values, tag_color: TAG_COLORS[values.tag] || null }
-      let supplierId = id
-      if (id) {
-        await update(id, payload)
-      } else {
-        const created = await create(payload)
-        supplierId = created.id
-      }
-      // đồng bộ sản phẩm: xóa cũ, chèn mới
-      await supabase.from('supplier_products').delete().eq('supplier_id', supplierId)
-      if (productNames.length) {
-        await supabase.from('supplier_products').insert(productNames.map((name) => ({ supplier_id: supplierId, name })))
-      }
+      const { error } = await supabase.rpc('save_supplier_with_products', {
+        p_id: id || null, p_values: payload, p_products: productNames,
+      })
+      if (error) throw error
+      await refetchSuppliers()
       await refetchProducts()
       setAddOpen(false); setEditItem(null)
       toast.success(id ? `Đã cập nhật "${values.name}".` : `Đã thêm nhà cung cấp "${values.name}".`)

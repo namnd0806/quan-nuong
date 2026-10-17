@@ -16,6 +16,7 @@ import MenuItemFormPanel from '@/components/MenuItemFormPanel'
 import FoodCostReportPanel from '@/components/FoodCostReportPanel'
 import { useCollection } from '@/hooks/useCollection'
 import { formatVND, cn } from '@/lib/utils'
+import { totalMenuCost, variableCostTotal } from '@/lib/data-flow'
 
 const CAT = {
   'Thịt nướng': { icon: '🥩', color: 'hsl(0 72% 58%)' },
@@ -47,7 +48,7 @@ function foodCostText(fc) { if (fc > 33) return 'text-destructive'; if (fc > 30)
 export default function MenuCost() {
   const toast = useToast()
   const { rows: menu, loading, error, create, update, remove } = useCollection('menu_items', { notify: { label: 'món', type: 'update' } })
-  const settingsHook = useCollection('settings', { orderBy: 'id', ascending: true, realtime: false })
+  const settingsHook = useCollection('settings', { orderBy: 'id', ascending: true })
   const foodCostTarget = settingsHook.rows[0]?.food_cost_target || 30
 
   const [tab, setTab] = useState('all')
@@ -61,10 +62,10 @@ export default function MenuCost() {
   const [deleting, setDeleting] = useState(false)
 
   // Tổng chi phí biến đổi của 1 món (từ mảng JSONB variable_costs)
-  const varTotalOf = (m) => (Array.isArray(m.variable_costs) ? m.variable_costs.reduce((s, vc) => s + (Number(vc.cost) || 0), 0) : 0)
+  const varTotalOf = variableCostTotal
   const varCountOf = (m) => (Array.isArray(m.variable_costs) ? m.variable_costs.filter((vc) => vc && vc.name).length : 0)
   // Food cost = (giá vốn + chi phí biến đổi) / giá bán
-  const totalCostOf = (m) => (Number(m.cost) || 0) + varTotalOf(m)
+  const totalCostOf = totalMenuCost
   const fcOf = (m) => (m.sell > 0 ? (totalCostOf(m) / m.sell) * 100 : 0)
   const profitOf = (m) => (Number(m.sell) || 0) - totalCostOf(m)
 
@@ -105,10 +106,10 @@ export default function MenuCost() {
   }), [menu, tab, statusFilter, query])
 
   const reportData = useMemo(() => {
-    const totalCost = menu.reduce((s, m) => s + m.cost, 0)
+    const totalCost = menu.reduce((s, m) => s + totalCostOf(m), 0)
     const totalSell = menu.reduce((s, m) => s + m.sell, 0)
     const catCost = {}
-    for (const m of menu) if (m.cat) catCost[m.cat] = (catCost[m.cat] || 0) + m.cost
+    for (const m of menu) if (m.cat) catCost[m.cat] = (catCost[m.cat] || 0) + totalCostOf(m)
     const distribution = Object.entries(catCost).map(([name, v]) => ({
       name, value: totalCost ? +((v / totalCost) * 100).toFixed(1) : 0, color: (CAT[name] || {}).color || 'hsl(215 20% 50%)',
     }))

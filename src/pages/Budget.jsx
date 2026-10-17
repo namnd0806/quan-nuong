@@ -22,6 +22,7 @@ import { useCollection } from '@/hooks/useCollection'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { formatVND, cn } from '@/lib/utils'
+import { categoryOptions as mergeCategories, localDate } from '@/lib/data-flow'
 
 const CAT = {
   'Xây dựng': { icon: '🏗️', color: '#FB923C' },
@@ -73,7 +74,8 @@ export default function Budget() {
   const { rows: items, loading, error, create, update, remove } = useCollection('budget_items', { notify: { label: 'khoản ngân sách', type: 'budget' } })
   const { rows: txs, refetch: refetchTx } = useCollection('budget_transactions', { orderBy: 'spent_at', ascending: false })
   const { rows: members } = useCollection('members', { orderBy: 'sort', ascending: true })
-  const { rows: settingsRows } = useCollection('settings', { orderBy: 'id', ascending: true, realtime: false })
+  const { rows: categories } = useCollection('main_categories', { orderBy: 'sort', ascending: true })
+  const { rows: settingsRows } = useCollection('settings', { orderBy: 'id', ascending: true })
 
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
@@ -87,8 +89,9 @@ export default function Budget() {
   const [deleting, setDeleting] = useState(false)
   const [editingActual, setEditingActual] = useState(null) // {id, value} for inline edit
 
-  const owners = useMemo(() => (members.length ? members.map((m) => m.name) : ['Nam', 'Phương']), [members])
-  const budgetTotal = settingsRows[0]?.budget_total || 500000000
+  const owners = useMemo(() => [...new Set([...members.map((m) => m.name), ...items.map((item) => item.owner)].filter(Boolean))], [members, items])
+  const categoryOptions = useMemo(() => mergeCategories(categories, items.map((item) => item.category), CATEGORIES), [categories, items])
+  const budgetTotal = settingsRows[0]?.budget_total ?? 500000000
 
   // actual per item = tổng transaction
   const actualByItem = useMemo(() => {
@@ -138,12 +141,12 @@ export default function Budget() {
 
   const CAT_TABS = useMemo(() => {
     const base = [{ key: 'all', label: 'Tất cả', count: enriched.length }]
-    for (const c of CATEGORIES) {
+    for (const c of categoryOptions) {
       const count = enriched.filter((e) => e.category === c).length
       if (count) base.push({ key: c, label: c, count })
     }
     return base
-  }, [enriched])
+  }, [enriched, categoryOptions])
 
   const filtered = useMemo(() => enriched.filter((e) => {
     if (tab !== 'all' && e.category !== tab) return false
@@ -197,8 +200,13 @@ export default function Budget() {
     setSaving(true)
     try {
       const { id, value } = editingActual
-      const actualValue = Number(value) || 0
-      await update(id, { actual: actualValue })
+      const actualValue = Number(value)
+      if (!Number.isSafeInteger(actualValue) || actualValue < 0) throw new Error('Thực chi phải là số nguyên không âm.')
+      const { error } = await supabase.rpc('set_budget_actual', {
+        p_item_id: id, p_actual: actualValue, p_expected: editingActual.expected,
+      })
+      if (error) throw error
+      await refetchTx()
       setEditingActual(null)
       toast.success('Đã cập nhật thực chi.')
     } catch (e) {
@@ -321,7 +329,7 @@ export default function Budget() {
             <SelectTrigger className="w-[170px] rounded-xl border-white/10 bg-white/5"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả hạng mục</SelectItem>
-              {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {categoryOptions.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={status} onValueChange={setStatus}>
@@ -399,7 +407,7 @@ export default function Budget() {
                           <Input
                             type="number"
                             value={editingActual.value}
-                            onChange={(ev) => setEditingActual({ id: e.id, value: ev.target.value })}
+                            onChange={(ev) => setEditingActual((prev) => ({ ...prev, value: ev.target.value }))}
                             onKeyDown={(ev) => {
                               if (ev.key === 'Enter') handleSaveActual()
                               if (ev.key === 'Escape') handleCancelActualEdit()
@@ -430,7 +438,7 @@ export default function Budget() {
                       ) : (
                         <button
                           className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-gray-300 transition-colors hover:bg-white/5 hover:text-foreground"
-                          onClick={() => setEditingActual({ id: e.id, value: e.actual })}
+                          onClick={() => setEditingActual({ id: e.id, value: e.actual, expected: e.actual })}
                         >
                           <span>{formatVND(e.actual)}</span>
                           <Pencil className="h-3 w-3 text-gray-500" />
@@ -483,6 +491,7 @@ export default function Budget() {
         open={formOpen}
         item={editing}
         owners={owners}
+        categories={categoryOptions}
         saving={saving}
         onClose={() => !saving && (setFormOpen(false), setEditing(null))}
         onSave={handleSave}
@@ -507,7 +516,7 @@ export default function Budget() {
 
 const emptyItem = { name: '', category: '', planned: '', owner: '', status: 'pending', note: '' }
 
-function BudgetItemFormPanel({ open, item, owners, saving, onClose, onSave }) {
+function BudgetItemFormPanel({ open, item, owners, categories, saving, onClose, onSave }) {
   const [form, setForm] = useState(emptyItem)
   useEffect(() => {
     if (open) setForm(item ? { ...emptyItem, ...item, planned: String(item.planned ?? '') } : emptyItem)
@@ -546,7 +555,7 @@ function BudgetItemFormPanel({ open, item, owners, saving, onClose, onSave }) {
                 <FieldLabel required>Hạng mục</FieldLabel>
                 <Select value={form.category || undefined} onValueChange={(v) => set('category', v)}>
                   <SelectTrigger className="rounded-xl border-white/10 bg-white/5"><SelectValue placeholder="Chọn hạng mục" /></SelectTrigger>
-                  <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  <SelectContent>{categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
@@ -597,12 +606,12 @@ function BudgetItemFormPanel({ open, item, owners, saving, onClose, onSave }) {
 }
 
 function RecordSpendingModal({ item, saving, onClose, onSave }) {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDate()
   const [amount, setAmount] = useState('')
   const [spentAt, setSpentAt] = useState(today)
   const [note, setNote] = useState('')
   useEffect(() => {
-    if (item) { setAmount(''); setSpentAt(new Date().toISOString().slice(0, 10)); setNote('') }
+    if (item) { setAmount(''); setSpentAt(localDate()); setNote('') }
   }, [item])
 
   const valid = Number(amount) > 0 && spentAt

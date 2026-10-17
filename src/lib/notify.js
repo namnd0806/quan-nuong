@@ -4,7 +4,8 @@ import { supabase } from '@/lib/supabase'
 // type: 'done' | 'update' | 'budget' | 'supplier'
 export async function logNotification({ actor, action, target, type = 'update' }) {
   try {
-    await supabase.from('notifications').insert({ actor, action, target, type, is_read: false })
+    const { error } = await supabase.from('notifications').insert({ actor, action, target, type, is_read: false })
+    if (error) throw error
   } catch (e) {
     // Không chặn luồng chính nếu ghi thông báo lỗi.
     // eslint-disable-next-line no-console

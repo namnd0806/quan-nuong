@@ -15,6 +15,7 @@ import ConfirmDialog from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 import { useCollection } from '@/hooks/useCollection'
 import { cn } from '@/lib/utils'
+import { categoryOptions, isOverdue } from '@/lib/data-flow'
 
 const DEPT = {
   'Xây dựng': { icon: HardHat, color: '#FB923C' },
@@ -51,6 +52,7 @@ export default function Checklist() {
   const toast = useToast()
   const { rows: tasks, loading, error, create, update, remove } = useCollection('checklist_tasks', { notify: { label: 'công việc', type: 'update' } })
   const { rows: members } = useCollection('members', { orderBy: 'sort', ascending: true })
+  const { rows: categories } = useCollection('main_categories', { orderBy: 'sort', ascending: true })
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
   const [dept, setDept] = useState('all')
@@ -61,7 +63,8 @@ export default function Checklist() {
   const [confirmDel, setConfirmDel] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  const assignees = useMemo(() => (members.length ? members.map((m) => m.name) : ['Nam', 'Bảo']), [members])
+  const assignees = useMemo(() => [...new Set([...members.map((m) => m.name), ...tasks.map((t) => t.assignee)].filter(Boolean))], [members, tasks])
+  const departments = useMemo(() => categoryOptions(categories, tasks.map((t) => t.dept), DEPARTMENTS), [categories, tasks])
 
   const patch = (id, p) => update(id, p).catch((e) => toast.error('Cập nhật thất bại: ' + e.message))
 
@@ -70,7 +73,7 @@ export default function Checklist() {
     todo: tasks.filter((t) => t.status === 'todo').length,
     doing: tasks.filter((t) => t.status === 'doing').length,
     done: tasks.filter((t) => t.status === 'done').length,
-    overdue: tasks.filter((t) => t.status === 'overdue').length,
+    overdue: tasks.filter((t) => isOverdue(t)).length,
   }), [tasks])
 
   const STAT_CARDS = [
@@ -82,7 +85,7 @@ export default function Checklist() {
   ]
 
   const filtered = useMemo(() => tasks.filter((t) => {
-    if (tab !== 'all' && t.status !== tab) return false
+    if (tab === 'overdue' ? !isOverdue(t) : tab !== 'all' && t.status !== tab) return false
     if (dept !== 'all' && t.dept !== dept) return false
     if (priority !== 'all' && t.priority !== priority) return false
     if (query && !t.title.toLowerCase().includes(query.toLowerCase())) return false
@@ -185,7 +188,7 @@ export default function Checklist() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả hạng mục</SelectItem>
-              {DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+              {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={priority} onValueChange={setPriority}>
@@ -316,7 +319,7 @@ export default function Checklist() {
 
       {!loading && !error && <div className="text-sm text-gray-400">Hiển thị {filtered.length} / {counts.all} công việc</div>}
 
-      <TaskPanel open={panelOpen} task={editing} assignees={assignees} saving={saving} onClose={() => !saving && (setPanelOpen(false), setEditing(null))} onSave={handleSave} />
+      <TaskPanel open={panelOpen} task={editing} assignees={assignees} departments={departments} saving={saving} onClose={() => !saving && (setPanelOpen(false), setEditing(null))} onSave={handleSave} />
       <ConfirmDialog
         open={!!confirmDel}
         title="Xóa công việc?"
@@ -339,7 +342,7 @@ function PanelLabel({ children, required }) {
 
 const emptyTask = { title: '', description: '', dept: '', assignee: '', deadline: '', priority: 'medium', status: 'todo' }
 
-function TaskPanel({ open, task, assignees, saving, onClose, onSave }) {
+function TaskPanel({ open, task, assignees, departments, saving, onClose, onSave }) {
   const [draft, setDraft] = useState(emptyTask)
   useEffect(() => { if (open) setDraft(task ? { ...emptyTask, ...task, deadline: task.deadline || '' } : emptyTask) }, [open, task])
   const set = (k, v) => setDraft((d) => ({ ...d, [k]: v }))
@@ -397,7 +400,7 @@ function TaskPanel({ open, task, assignees, saving, onClose, onSave }) {
                   <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
                     <SelectValue placeholder="Chọn hạng mục" />
                   </SelectTrigger>
-                  <SelectContent>{DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                  <SelectContent>{departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>

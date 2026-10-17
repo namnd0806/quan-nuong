@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCollection } from '@/hooks/useCollection'
 import { formatVND, cn } from '@/lib/utils'
+import { isOverdue } from '@/lib/data-flow'
 
 const chartTooltip = {
   contentStyle: {
@@ -49,14 +50,14 @@ export default function Dashboard() {
   const { rows: tasks, loading: lt } = useCollection('checklist_tasks')
   const { rows: items } = useCollection('budget_items')
   const { rows: txs } = useCollection('budget_transactions')
-  const { rows: settingsRows } = useCollection('settings', { orderBy: 'id', ascending: true, realtime: false })
+  const { rows: settingsRows } = useCollection('settings', { orderBy: 'id', ascending: true })
 
-  const budgetTotal = settingsRows[0]?.budget_total || 500000000
+  const budgetTotal = settingsRows[0]?.budget_total ?? 500000000
 
   const taskStat = useMemo(() => {
     const done = tasks.filter((t) => t.status === 'done').length
     const doing = tasks.filter((t) => t.status === 'doing').length
-    const overdue = tasks.filter((t) => t.status === 'overdue').length
+    const overdue = tasks.filter((t) => isOverdue(t)).length
     const todo = tasks.filter((t) => t.status === 'todo').length
     const total = tasks.length
     const pct = total ? Math.round((done / total) * 100) : 0
@@ -81,7 +82,7 @@ export default function Dashboard() {
       title: 'TIẾN ĐỘ SETUP',
       value: `${taskStat.pct}%`,
       sub: `${taskStat.done} / ${taskStat.total} công việc`,
-      trend: '+5% tuần này',
+      trend: `${taskStat.done} công việc hoàn thành`,
       icon: Target,
       gradient: 'from-blue-500/20 to-blue-600/5',
       iconBg: 'rgba(59, 130, 246, 0.15)',
