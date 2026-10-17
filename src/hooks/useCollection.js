@@ -5,7 +5,7 @@ import { logNotification } from '@/lib/notify'
 
 // Hook CRUD dùng chung + đồng bộ realtime cho mọi bảng.
 // notify: { label, type, name(row) } → tự động ghi thông báo khi thêm/sửa/xóa.
-export function useCollection(table, { orderBy = 'created_at', ascending = false, realtime = true, notify = null } = {}) {
+export function useCollection(table, { orderBy = 'created_at', ascending = false, realtime = true, notify = null, limit = null, filterColumn = null, filterValue = null } = {}) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -16,16 +16,27 @@ export function useCollection(table, { orderBy = 'created_at', ascending = false
   const fetchAll = useCallback(async () => {
     const version = ++requestVersion.current
     try {
-      const { data, error } = await supabase.from(table).select('*').order(orderBy, { ascending })
-      if (version !== requestVersion.current) return
-      if (error) setError(error)
-      else { setRows(data || []); setError(null) }
+      // PostgREST caps a response at 1000 rows; never silently truncate money totals.
+      const collected = []
+      const pageSize = Math.min(limit || 500, 500)
+      for (let offset = 0; ; offset += pageSize) {
+        let query = supabase.from(table).select('*').order(orderBy, { ascending })
+        if (orderBy !== 'id') query = query.order('id', { ascending })
+        if (filterColumn && filterValue != null) query = query.eq(filterColumn, filterValue)
+        const take = limit ? Math.min(pageSize, limit - offset) : pageSize
+        const { data, error } = await query.range(offset, offset + take - 1)
+        if (version !== requestVersion.current) return
+        if (error) throw error
+        collected.push(...(data || []))
+        if ((data || []).length < take || (limit && collected.length >= limit)) break
+      }
+      setRows([...new Map(collected.map((row) => [row.id, row])).values()]); setError(null)
     } catch (error) {
       if (version === requestVersion.current) setError(error)
     } finally {
       if (version === requestVersion.current) setLoading(false)
     }
-  }, [table, orderBy, ascending])
+  }, [table, orderBy, ascending, limit, filterColumn, filterValue])
 
   useEffect(() => {
     let active = true
@@ -34,12 +45,12 @@ export function useCollection(table, { orderBy = 'created_at', ascending = false
     if (!realtime) return () => { active = false; requestVersion.current++ }
     const channel = supabase
       .channel(`rt-${table}-${crypto.randomUUID()}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table }, () => { if (active) fetchAll() })
+      .on('postgres_changes', { event: '*', schema: 'public', table, ...(filterColumn && filterValue != null ? { filter: `${filterColumn}=eq.${filterValue}` } : {}) }, () => { if (active) fetchAll() })
       .subscribe((status) => { if (active && status === 'SUBSCRIBED') fetchAll() })
     const onFocus = () => { if (active) fetchAll() }
     window.addEventListener('focus', onFocus)
     return () => { active = false; requestVersion.current++; window.removeEventListener('focus', onFocus); supabase.removeChannel(channel) }
-  }, [table, realtime, fetchAll])
+  }, [table, realtime, fetchAll, filterColumn, filterValue])
 
   const fireNotify = (action, row) => {
     if (!notify) return

@@ -49,7 +49,8 @@ function getTaskIcon(title) {
 export default function Dashboard() {
   const { rows: tasks, loading: lt } = useCollection('checklist_tasks')
   const { rows: items } = useCollection('budget_items')
-  const { rows: txs } = useCollection('budget_transactions')
+  const { rows: allTransactions } = useCollection('budget_transactions')
+  const txs = useMemo(() => allTransactions.filter((t) => !t.voided_at), [allTransactions])
   const { rows: settingsRows } = useCollection('settings', { orderBy: 'id', ascending: true })
 
   const budgetTotal = settingsRows[0]?.budget_total ?? 500000000
