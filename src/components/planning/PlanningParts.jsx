@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { ArrowLeft, X, Loader2, Paperclip, Trash2, Folder, Wrench, Armchair, Refrigerator, Utensils, FileText, Users, Leaf, Megaphone, Wallet, ClipboardCheck } from 'lucide-react'
+import { ArrowLeft, X, Loader2, Paperclip, Trash2, Folder, Wrench, Armchair, Refrigerator, Utensils, FileText, Users, Leaf, Megaphone, Wallet, ClipboardCheck, Clock3, CircleAlert, TrendingUp, CircleDollarSign } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { attachmentList } from '@/lib/planning-model'
 
@@ -9,7 +9,10 @@ const legacyIcons = { '🏗️': 'tools', '🎨': 'tools', '🪑': 'chair', '�
 export function GroupIcon({ name }) { const Icon = groupIcons[name] || groupIcons[legacyIcons[name]] || Folder; return <Icon size={20} strokeWidth={1.7} /> }
 export function Pill({ value, children }) { return <span className={`pw-pill ${['done','paid','low'].includes(value) ? 'green' : ['waiting','partial','high'].includes(value) ? 'amber' : ['overdue','urgent'].includes(value) ? 'red' : value === 'doing' ? 'blue' : ''}`}>{children}</span> }
 export function Field({ label, children, full = false }) { return <label className={`pw-field ${full ? 'full' : ''}`}><span>{label}</span>{children}</label> }
-export function Stat({ label, value, note, tone = '' }) { return <div className={`pw-stat ${tone}`}><span>{label}</span><strong>{value}</strong>{note && <small>{note}</small>}</div> }
+export function Stat({ label, value, note, tone = '' }) {
+  const Icon = tone === 'red' ? CircleAlert : tone === 'teal' ? CircleDollarSign : tone === 'amber' ? Clock3 : tone.startsWith('person') ? Users : tone === 'blue' ? TrendingUp : ClipboardCheck
+  return <div className={`pw-stat ${tone}`}><span className="pw-stat-icon" aria-hidden="true"><Icon size={20} strokeWidth={1.8} /></span><span>{label}</span><strong>{value}</strong>{note && <small>{note}</small>}</div>
+}
 export function BusyButton({ busy, children, ...props }) { return <button className="pw-primary" {...props} disabled={busy || props.disabled}>{busy ? <Loader2 className="animate-spin" size={17} /> : null}{children}</button> }
 
 export function PlanningPanel({ open, title, onClose, busy = false, children, footer, wide = false }) {
