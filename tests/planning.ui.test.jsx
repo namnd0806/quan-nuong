@@ -20,7 +20,7 @@ beforeEach(() => {
   members:[{id:'nam',name:'Nam (Bạn)'},{id:'phuong',name:'Phương'}],
   checklist_tasks:[{id:'task-1',title:'Lắp hút khói',dept:'Mặt bằng & thi công',category_id:'group-1',assignee:'Nam (Bạn)',status:'doing',priority:'high',deadline:'2026-10-20',updated_at:'2026-10-17T10:00:00Z',attachments:[]}],
   budget_items:[{id:'budget-1',name:'Thi công',category:'Mặt bằng & thi công',category_id:'group-1',planned:100,agreed_amount:90,status:'partial',updated_at:'2026-10-17T10:00:00Z',attachments:[]}],
-  budget_transactions:[{id:'p1',item_id:'budget-1',amount:20,payer_id:'nam',spent_at:'2026-10-17'},{id:'p2',item_id:'budget-1',amount:10,payer_id:'phuong',spent_at:'2026-10-17'},{id:'p3',item_id:'budget-1',amount:5,payer_id:null,spent_at:'2026-10-17'},{id:'p4',item_id:'budget-1',amount:99,payer_id:'nam',voided_at:'2026-10-17',spent_at:'2026-10-17',void_reason:'Sai'}],
+  budget_transactions:[{id:'p1',item_id:'budget-1',amount:20,payer_id:'nam',spent_at:'2026-10-17',note:'Cọc đợt một',updated_at:'2026-10-17T10:00:00Z'},{id:'p2',item_id:'budget-1',amount:10,payer_id:'phuong',spent_at:'2026-10-17'},{id:'p3',item_id:'budget-1',amount:5,payer_id:null,spent_at:'2026-10-17'},{id:'p4',item_id:'budget-1',amount:99,payer_id:'nam',voided_at:'2026-10-17',spent_at:'2026-10-17',void_reason:'Sai'}],
   workspace_events:[],
  }
  for(const [table,rows] of Object.entries(fixtures)) mocks.collections[table]={rows,loading:false,error:null,refetch:vi.fn().mockResolvedValue(),create:vi.fn().mockResolvedValue(),update:vi.fn().mockResolvedValue(),remove:vi.fn().mockResolvedValue()}
@@ -70,8 +70,8 @@ describe('Checklist and Budget interactions', () => {
   mount('budget')
   fireEvent.click(screen.getByRole('button',{name:'Xem nam đã chi (20đ)'}))
   const dialog=screen.getByRole('dialog',{name:'Nam đã chi · 1'})
-  expect(within(dialog).getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual(['Khoản chi','Ngày chi','Số tiền'])
-  expect(within(dialog).queryByText('Nội dung')).toBeNull()
+  expect(within(dialog).getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual(['Khoản chi','Ngày chi','Số tiền','Nội dung'])
+  expect(within(dialog).getByText('Cọc đợt một')).toBeTruthy()
   expect(within(dialog).getByText('Thi công')).toBeTruthy()
   expect(within(dialog).getByText('20đ')).toBeTruthy()
  })
@@ -178,13 +178,28 @@ describe('Checklist and Budget interactions', () => {
   fireEvent.keyDown(screen.getByRole('button',{name:'Kéo sắp xếp Mặt bằng & thi công'}),{key:'ArrowDown'})
   await waitFor(()=>expect(mocks.rpc).toHaveBeenCalledWith('reorder_main_categories',{p_ids:['group-2','group-1']}))
  })
- it('requires a cancellation reason and calls the void RPC rather than deleting payment history', async () => {
+ it('moves records to the selected group before deleting their old group', async () => {
+  mocks.collections.main_categories.rows.push({id:'group-2',name:'Thiết bị',sort:2,created_at:'2026-10-17'})
+  mount('budget')
+  fireEvent.click(screen.getByRole('button',{name:'Quản lý nhóm'}))
+  const manager=screen.getByRole('dialog',{name:'Quản lý nhóm'})
+  fireEvent.click(within(manager).getByRole('button',{name:'Mặt bằng & thi công'}))
+  fireEvent.click(within(manager).getByRole('button',{name:'Xóa nhóm'}))
+  const dialog=screen.getByRole('dialog',{name:'Xóa nhóm'})
+  expect(within(dialog).getByText(/2 bản ghi sẽ được chuyển/)).toBeTruthy()
+  fireEvent.change(within(dialog).getByLabelText('Chuyển dữ liệu sang nhóm *'),{target:{value:'group-2'}})
+  fireEvent.click(within(dialog).getByRole('button',{name:'Xác nhận xóa'}))
+  await waitFor(()=>expect(mocks.rpc).toHaveBeenCalledWith('delete_main_category',{p_id:'group-1',p_move_to:'group-2'}))
+  expect(mocks.collections.budget_items.remove).not.toHaveBeenCalled()
+  expect(mocks.collections.checklist_tasks.remove).not.toHaveBeenCalled()
+ })
+ it('deletes a payment after confirmation and refreshes the totals', async () => {
   mount('budget','/budget?item=budget-1')
   const details=screen.getByRole('dialog',{name:'Chi tiết khoản chi'})
-  fireEvent.click(within(details).getAllByRole('button',{name:'Hủy khoản chi'})[0])
-  const dialog=screen.getByRole('dialog',{name:'Hủy khoản chi'})
-  fireEvent.change(within(dialog).getByLabelText('Lý do hủy *'),{target:{value:'Ghi nhầm'}})
-  fireEvent.click(within(dialog).getByRole('button',{name:'Xác nhận'}))
-  await waitFor(()=>expect(mocks.rpc).toHaveBeenCalledWith('void_payment',expect.objectContaining({p_id:'p1',p_reason:'Ghi nhầm'})))
+  fireEvent.click(within(details).getAllByRole('button',{name:'Xóa lần thanh toán'})[0])
+  const dialog=screen.getByRole('dialog',{name:'Xóa lần thanh toán'})
+  fireEvent.click(within(dialog).getByRole('button',{name:'Xác nhận xóa'}))
+  await waitFor(()=>expect(mocks.rpc).toHaveBeenCalledWith('delete_payment',{p_id:'p1',p_expected:'2026-10-17T10:00:00Z'}))
+  expect(mocks.success).toHaveBeenCalledWith('Đã xóa lần thanh toán.')
  })
 })
