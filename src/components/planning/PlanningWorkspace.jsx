@@ -280,16 +280,8 @@ export default function PlanningWorkspace({ kind }) {
       })}{!quickTasks.length && <div className="pw-quick-empty"><Check size={24} /><strong>Không có công việc</strong><span>Danh sách này hiện đang trống.</span></div>}</div>
     </PlanningPanel>
 
-    <PlanningPanel open={!task && Boolean(budgetView)} title={`${budgetView?.label || 'Ngân sách'} · ${budgetQuickRows.length}`} onClose={() => setBudgetView(null)} variant="quick">
-      <div className="pw-budget-quick-list">{budgetQuickRows.map((row) => {
-        if (budgetView?.type === 'person') {
-          const item = budgets.rows.find((budget) => budget.id === row.item_id)
-          if (!item) return null
-          return <article key={row.id} className="pw-budget-quick-row payment" role="button" tabIndex={0} aria-label={`Mở khoản chi ${item.name}`} onClick={() => { setBudgetView(null); setDetailId(item.id) }} onKeyDown={(e) => { if (['Enter',' '].includes(e.key)) { e.preventDefault(); setBudgetView(null); setDetailId(item.id) } }}><span className="pw-budget-quick-icon"><Banknote size={18} /></span><div><span className="pw-quick-group">{item.category || 'Chưa phân nhóm'}</span><strong>{item.name}</strong>{row.note && <small>{row.note}</small>}<span className="pw-budget-quick-date"><Calendar size={12} />{date(row.spent_at)}</span></div><strong className="pw-budget-quick-amount">{money(row.amount)}</strong><ChevronRight size={18} className="pw-quick-arrow" /></article>
-        }
-        const status = budgetPaymentState(row, row.actual)
-        return <article key={row.id} className="pw-budget-quick-row" role="button" tabIndex={0} aria-label={`Mở khoản chi ${row.name}`} onClick={() => { setBudgetView(null); setDetailId(row.id) }} onKeyDown={(e) => { if (['Enter',' '].includes(e.key)) { e.preventDefault(); setBudgetView(null); setDetailId(row.id) } }}><span className="pw-budget-quick-icon"><Wallet size={18} /></span><div><span className="pw-quick-group">{row.category || 'Chưa phân nhóm'}</span><strong>{row.name}</strong><div className="pw-budget-quick-money"><span>Dự toán <strong>{money(row.planned)}</strong></span><span>Thực chi <strong>{money(row.actual)}</strong></span></div></div><BudgetState state={status} planned={row.planned} actual={row.actual} /><ChevronRight size={18} className="pw-quick-arrow" /></article>
-      })}{!budgetQuickRows.length && <div className="pw-quick-empty"><Banknote size={24} /><strong>Chưa có khoản chi</strong><span>Dữ liệu mới sẽ tự xuất hiện tại đây.</span></div>}</div>
+    <PlanningPanel open={!task && Boolean(budgetView)} title={`${budgetView?.label || 'Ngân sách'} · ${budgetQuickRows.length}`} onClose={() => setBudgetView(null)} variant="quick" wide>
+      <BudgetQuickTable rows={budgetQuickRows} view={budgetView} budgets={budgets.rows} onOpen={(id) => { setBudgetView(null); setDetailId(id) }} />
     </PlanningPanel>
 
     <PlanningPanel open={Boolean(draft)} title={task ? (draft?.updated_at ? 'Chi tiết công việc' : 'Thêm công việc') : (draft?.updated_at ? 'Sửa khoản ngân sách' : 'Thêm khoản ngân sách')} busy={disabled} onClose={() => setDraft(null)} wide footer={<><button className="pw-secondary" disabled={disabled} onClick={() => setDraft(null)}>Đóng</button><BusyButton busy={disabled} type="submit" form="planning-record-form">Lưu thay đổi</BusyButton></>}>
@@ -319,6 +311,29 @@ export default function PlanningWorkspace({ kind }) {
 }
 
 function MoneyMetric({ label, value, spent = false }) { return <span className={`pw-money-metric ${spent ? 'spent' : ''}`}><small>{label}</small><strong>{spent && <Banknote size={13} aria-hidden="true" />}{value}</strong></span> }
+function BudgetQuickTable({ rows, view, budgets, onOpen }) {
+  if (!rows.length) return <div className="pw-quick-empty"><Banknote size={24} /><strong>Chưa có khoản chi</strong><span>Dữ liệu mới sẽ tự xuất hiện tại đây.</span></div>
+  const person = view?.type === 'person'
+  const openRow = (event, id) => {
+    if (event.type === 'keydown' && !['Enter',' '].includes(event.key)) return
+    if (event.type === 'keydown') event.preventDefault()
+    onOpen(id)
+  }
+  return <div className={`pw-budget-table-shell ${person ? 'person' : ''}`}>
+    <table className="pw-budget-table">
+      <thead><tr>{person ? <><th>Khoản chi</th><th>Nội dung</th><th>Ngày chi</th><th className="numeric">Số tiền</th></> : <><th>Khoản chi</th><th className="numeric">Dự toán</th><th className="numeric">Thực chi</th><th>Trạng thái</th></>}</tr></thead>
+      <tbody>{rows.map((row) => {
+        if (person) {
+          const item = budgets.find((budget) => budget.id === row.item_id)
+          if (!item) return null
+          return <tr key={row.id} role="button" tabIndex={0} aria-label={`Mở khoản chi ${item.name}`} onClick={(event) => openRow(event, item.id)} onKeyDown={(event) => openRow(event, item.id)}><td className="pw-budget-table-name"><span className="pw-budget-table-icon"><Banknote size={15} /></span><span><strong>{item.name}</strong><small>{item.category || 'Chưa phân nhóm'}</small></span></td><td className="pw-budget-table-note">{row.note || '—'}</td><td className="pw-budget-table-date">{date(row.spent_at)}</td><td className="pw-budget-table-amount actual">{money(row.amount)}</td></tr>
+        }
+        const status = budgetPaymentState(row, row.actual)
+        return <tr key={row.id} role="button" tabIndex={0} aria-label={`Mở khoản chi ${row.name}`} onClick={(event) => openRow(event, row.id)} onKeyDown={(event) => openRow(event, row.id)}><td className="pw-budget-table-name"><span className="pw-budget-table-icon"><Wallet size={15} /></span><span><strong>{row.name}</strong><small>{row.category || 'Chưa phân nhóm'}</small></span></td><td className="pw-budget-table-amount planned">{money(row.planned)}</td><td className="pw-budget-table-amount actual">{money(row.actual)}</td><td className="pw-budget-table-status"><BudgetState state={status} planned={row.planned} actual={row.actual} /></td></tr>
+      })}</tbody>
+    </table>
+  </div>
+}
 function BudgetState({ state, planned, actual, metric = false }) {
   const target = Math.max(Number(planned || 0), 0)
   const ratio = target > 0 ? Math.min(100, Math.round(Number(actual || 0) / target * 100)) : 0

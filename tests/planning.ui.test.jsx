@@ -70,8 +70,17 @@ describe('Checklist and Budget interactions', () => {
   mount('budget')
   fireEvent.click(screen.getByRole('button',{name:'Xem nam đã chi (20đ)'}))
   const dialog=screen.getByRole('dialog',{name:'Nam đã chi · 1'})
+  expect(within(dialog).getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual(['Khoản chi','Nội dung','Ngày chi','Số tiền'])
   expect(within(dialog).getByText('Thi công')).toBeTruthy()
   expect(within(dialog).getByText('20đ')).toBeTruthy()
+ })
+ it('shows budget totals in a financial table and opens a row', () => {
+  mount('budget')
+  fireEvent.click(screen.getByRole('button',{name:'Xem tổng dự toán (100đ)'}))
+  const dialog=screen.getByRole('dialog',{name:'Tổng dự toán · 1'})
+  expect(within(dialog).getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual(['Khoản chi','Dự toán','Thực chi','Trạng thái'])
+  fireEvent.click(within(dialog).getByRole('button',{name:'Mở khoản chi Thi công'}))
+  expect(screen.getByRole('dialog',{name:'Chi tiết khoản chi'})).toBeTruthy()
  })
  it('only enables the budget group scrollbar from the sixth visible row', () => {
   mount('budget')
