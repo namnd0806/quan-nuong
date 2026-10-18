@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { spendingSummary, paymentTotal, planningGroups, taskMatches, validMoney } from '../src/lib/planning-model.js'
+import { spendingSummary, paymentTotal, planningGroups, taskMatches, validMoney, budgetPaymentState } from '../src/lib/planning-model.js'
 
 test('spending reports each payer and preserves unassigned legacy payments without comparing people', () => {
  const payments = [{ amount:20,payer_id:'nam' },{ amount:10,payer_id:'phuong' },{ amount:8,payer_id:null },{ amount:99,payer_id:'nam',voided_at:'2026-10-17' }]
@@ -27,4 +27,11 @@ test('my tasks recognizes legacy member labels and shared work', () => {
 test('money validation rejects negative, fractional, missing and unsafe values', () => {
  for(const value of [-1,1.2,'',NaN,Infinity,9007199254740992]) assert.equal(validMoney(value),false)
  for(const value of [0,'20000000']) assert.equal(validMoney(value),true)
+})
+
+test('budget status is derived from real payments instead of stale manual status', () => {
+ assert.equal(budgetPaymentState({ planned:99,status:'paid' },0),'pending')
+ assert.equal(budgetPaymentState({ planned:99 },20),'partial')
+ assert.equal(budgetPaymentState({ planned:99 },99),'paid')
+ assert.equal(budgetPaymentState({ planned:120,agreed_amount:90 },90),'paid')
 })

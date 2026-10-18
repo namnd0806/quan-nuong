@@ -97,3 +97,16 @@
 .pw-icon-picker{max-height:min(380px,44dvh);overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;align-content:start;scrollbar-width:thin;scrollbar-color:#52769e #0d1b2d;scrollbar-gutter:stable;padding:8px 10px 8px 5px;border:1px solid #2d435e;border-radius:12px;background:#0b182838}
 .pw-icon-picker::-webkit-scrollbar{width:6px}.pw-icon-picker::-webkit-scrollbar-track{background:#0d1b2d;border-radius:8px}.pw-icon-picker::-webkit-scrollbar-thumb{background:#52769e;border-radius:8px}.pw-icon-picker:focus-visible{outline:2px solid #83b5ff;outline-offset:3px}
 @media(max-width:767px){.pw-icon-picker{max-height:min(300px,38dvh);padding:7px 7px 7px 4px}}
+
+/* Budget rows: separate the two amounts and keep status visually independent. */
+.pw-row-content{min-width:0}.pw-budget-mobile-values,.pw-budget-mobile-status{display:none}.pw-budget-planned{color:#b8c8dc}.pw-budget-actual{color:#7ce1bc!important;font-weight:700}
+@media(max-width:767px){
+ .pw-record.budget{padding:17px 14px 16px}.pw-record.budget .pw-row-title{align-items:flex-start}.pw-record.budget .pw-row-title>svg{margin-top:1px}
+ .pw-record.budget .pw-row-content{width:100%}.pw-budget-titleline{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.pw-budget-titleline>strong{font-size:14px!important;line-height:1.45;flex:1}
+ .pw-budget-mobile-status{display:inline-flex;flex-shrink:0}.pw-budget-mobile-status .pw-pill{font-size:9px;padding:4px 7px}
+ .pw-budget-mobile-values{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+ .pw-money-metric{display:flex;flex-direction:column;gap:5px;padding:9px 11px;border:1px solid #2e435d;border-radius:10px;background:#0c1a2c80}
+ .pw-money-metric small{font-size:9px!important;line-height:1!important;margin:0!important;color:#8298b4!important;text-transform:uppercase;letter-spacing:.65px;font-weight:650}
+ .pw-money-metric strong{display:flex;align-items:center;gap:5px;font-size:14px!important;line-height:1.2;color:#dce8f7;font-variant-numeric:tabular-nums}
+ .pw-money-metric.spent{border-color:#2c604b;background:#102b238c}.pw-money-metric.spent small,.pw-money-metric.spent strong,.pw-money-metric.spent svg{color:#76dfa8!important}
+}

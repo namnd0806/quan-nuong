@@ -9,6 +9,15 @@ export const validMoney = (value) => Number.isSafeInteger(Number(value)) && Numb
 export const activePayments = (payments) => payments.filter((p) => !p.voided_at)
 export const paymentTotal = (payments) => activePayments(payments).reduce((sum, p) => sum + Number(p.amount || 0), 0)
 
+export function budgetPaymentState(item, actual) {
+  const paid = Number(actual || 0)
+  const agreed = item?.agreed_amount
+  const target = agreed !== null && agreed !== undefined && agreed !== '' ? Number(agreed) : Number(item?.planned || 0)
+  if (paid <= 0) return 'pending'
+  if (target > 0 && paid >= target) return 'paid'
+  return 'partial'
+}
+
 export function spendingSummary(items, payments, members) {
   const active = activePayments(payments)
   return {
