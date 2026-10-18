@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { ArrowLeft, X, Loader2, Paperclip, Trash2, Folder, Wrench, Armchair, Refrigerator, Utensils, FileText, Users, Leaf, Megaphone, Wallet, ClipboardCheck, Clock3, CircleAlert, TrendingUp, CircleDollarSign, Store, Building2, Hammer, Paintbrush, Ruler, PlugZap, Droplets, Lightbulb, Fan, AirVent, CookingPot, ChefHat, Beef, Fish, Carrot, Coffee, Wine, ShoppingBasket, Package, Truck, Warehouse, Monitor, Printer, Wifi, Camera, ShieldCheck, Receipt, Landmark, CalendarDays, ClipboardList, Sparkles, Brush, Ticket, Smartphone, Globe, HeartHandshake, Music, Sofa, DoorOpen } from 'lucide-react'
+import { ArrowLeft, X, ChevronRight, Loader2, Paperclip, Trash2, Folder, Wrench, Armchair, Refrigerator, Utensils, FileText, Users, Leaf, Megaphone, Wallet, ClipboardCheck, Clock3, CircleAlert, TrendingUp, CircleDollarSign, Store, Building2, Hammer, Paintbrush, Ruler, PlugZap, Droplets, Lightbulb, Fan, AirVent, CookingPot, ChefHat, Beef, Fish, Carrot, Coffee, Wine, ShoppingBasket, Package, Truck, Warehouse, Monitor, Printer, Wifi, Camera, ShieldCheck, Receipt, Landmark, CalendarDays, ClipboardList, Sparkles, Brush, Ticket, Smartphone, Globe, HeartHandshake, Music, Sofa, DoorOpen } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { attachmentList } from '@/lib/planning-model'
 
@@ -26,13 +26,14 @@ const legacyIcons = { '🏗️': 'tools', '🎨': 'tools', '🪑': 'chair', '�
 export function GroupIcon({ name }) { const Icon = groupIcons[name] || groupIcons[legacyIcons[name]] || Folder; return <Icon size={20} strokeWidth={1.7} /> }
 export function Pill({ value, children }) { return <span className={`pw-pill ${['done','paid','low'].includes(value) ? 'green' : ['waiting','partial','high'].includes(value) ? 'amber' : ['overdue','urgent'].includes(value) ? 'red' : value === 'doing' ? 'blue' : ''}`}>{children}</span> }
 export function Field({ label, children, full = false }) { return <label className={`pw-field ${full ? 'full' : ''}`}><span>{label}</span>{children}</label> }
-export function Stat({ label, value, note, tone = '' }) {
+export function Stat({ label, value, note, tone = '', onClick }) {
   const Icon = tone === 'red' ? CircleAlert : tone === 'teal' ? CircleDollarSign : tone === 'amber' ? Clock3 : tone.startsWith('person') ? Users : tone === 'blue' ? TrendingUp : ClipboardCheck
-  return <div className={`pw-stat ${tone}`}><span className="pw-stat-icon" aria-hidden="true"><Icon size={20} strokeWidth={1.8} /></span><span>{label}</span><strong>{value}</strong>{note && <small>{note}</small>}</div>
+  const content = <><span className="pw-stat-icon" aria-hidden="true"><Icon size={20} strokeWidth={1.8} /></span><span>{label}</span><strong>{value}</strong>{note && <small>{note}</small>}{onClick && <span className="pw-stat-hint">Xem danh sách <ChevronRight size={13} /></span>}</>
+  return onClick ? <button type="button" className={`pw-stat pw-stat-action ${tone}`} onClick={onClick} aria-label={`Xem ${label.toLocaleLowerCase('vi')} (${value})`}>{content}</button> : <div className={`pw-stat ${tone}`}>{content}</div>
 }
 export function BusyButton({ busy, children, ...props }) { return <button className="pw-primary" {...props} disabled={busy || props.disabled}>{busy ? <Loader2 className="animate-spin" size={17} /> : null}{children}</button> }
 
-export function PlanningPanel({ open, title, onClose, busy = false, children, footer, wide = false }) {
+export function PlanningPanel({ open, title, onClose, busy = false, children, footer, wide = false, variant = '' }) {
   const ref = useRef(null)
   useEffect(() => {
     const dialog = ref.current
@@ -42,7 +43,7 @@ export function PlanningPanel({ open, title, onClose, busy = false, children, fo
     if (open) document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = previous }
   }, [open])
-  return <dialog ref={ref} className={`pw-dialog ${wide ? 'wide' : ''}`} onCancel={(e) => { e.preventDefault(); if (!busy) onClose() }} aria-label={title}>
+  return <dialog ref={ref} className={`pw-dialog ${wide ? 'wide' : ''} ${variant ? `pw-${variant}-panel` : ''}`} onCancel={(e) => { e.preventDefault(); if (!busy) onClose() }} aria-label={title}>
     {open && <><header className="pw-dialog-head"><button type="button" onClick={onClose} disabled={busy} aria-label="Đóng"><ArrowLeft size={20} /></button><h2>{title}</h2><button type="button" onClick={onClose} disabled={busy} aria-label="Đóng cửa sổ"><X size={18} /></button></header><div className="pw-dialog-body">{children}</div>{footer && <footer className="pw-dialog-footer">{footer}</footer>}</>}
   </dialog>
 }

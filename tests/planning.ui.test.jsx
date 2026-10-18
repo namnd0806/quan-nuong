@@ -31,6 +31,17 @@ const mount = (kind, path='/') => render(<MemoryRouter initialEntries={[path]}><
 const expandGroup = () => fireEvent.click(screen.getByRole('button', {name:/Mặt bằng & thi công/}))
 
 describe('Checklist and Budget interactions', () => {
+ it('opens dashboard counts as a flat quick list while groups stay collapsed', () => {
+  mount('tasks')
+  const group=screen.getByRole('button',{name:/Mặt bằng & thi công/})
+  expect(group.getAttribute('aria-expanded')).toBe('false')
+  fireEvent.click(screen.getByRole('button',{name:'Xem đang làm (1)'}))
+  const quick=screen.getByRole('dialog',{name:'Đang làm · 1'})
+  expect(group.getAttribute('aria-expanded')).toBe('false')
+  expect(within(quick).getByText('Mặt bằng & thi công')).toBeTruthy()
+  fireEvent.click(within(quick).getByRole('button',{name:'Mở nhanh Lắp hút khói'}))
+  expect(screen.getByRole('dialog',{name:'Chi tiết công việc'})).toBeTruthy()
+ })
  it('opens a task by its whole row and saves editable values to the backend contract', async () => {
   mount('tasks')
   expandGroup()
