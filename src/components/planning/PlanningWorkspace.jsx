@@ -321,19 +321,20 @@ function BudgetQuickTable({ rows, view, budgets, onOpen }) {
   }
   return <div className={`pw-budget-table-shell ${person ? 'person' : ''}`}>
     <table className="pw-budget-table">
-      <thead><tr>{person ? <><th>Khoản chi</th><th>Nội dung</th><th>Ngày chi</th><th className="numeric">Số tiền</th></> : <><th>Khoản chi</th><th className="numeric">Dự toán</th><th className="numeric">Thực chi</th><th>Trạng thái</th></>}</tr></thead>
+      <thead><tr>{person ? <><th>Khoản chi</th><th>Ngày chi</th><th className="numeric">Số tiền</th></> : <><th>Khoản chi</th><th className="numeric">Dự toán</th><th className="numeric">Thực chi</th><th>Trạng thái</th></>}</tr></thead>
       <tbody>{rows.map((row) => {
         if (person) {
           const item = budgets.find((budget) => budget.id === row.item_id)
           if (!item) return null
-          return <tr key={row.id} role="button" tabIndex={0} aria-label={`Mở khoản chi ${item.name}`} onClick={(event) => openRow(event, item.id)} onKeyDown={(event) => openRow(event, item.id)}><td className="pw-budget-table-name"><span className="pw-budget-table-icon"><Banknote size={15} /></span><span><strong>{item.name}</strong><small>{item.category || 'Chưa phân nhóm'}</small></span></td><td className="pw-budget-table-note">{row.note || '—'}</td><td className="pw-budget-table-date">{date(row.spent_at)}</td><td className="pw-budget-table-amount actual">{money(row.amount)}</td></tr>
+          return <tr key={row.id} role="button" tabIndex={0} aria-label={`Mở khoản chi ${item.name}`} onClick={(event) => openRow(event, item.id)} onKeyDown={(event) => openRow(event, item.id)}><td className="pw-budget-table-name"><span className="pw-budget-table-icon"><Banknote size={15} /></span><span><strong>{item.name}</strong><small>{item.category || 'Chưa phân nhóm'}</small></span></td><td className="pw-budget-table-date">{date(row.spent_at)}</td><td className="pw-budget-table-amount actual"><TableMoney value={row.amount} /></td></tr>
         }
         const status = budgetPaymentState(row, row.actual)
-        return <tr key={row.id} role="button" tabIndex={0} aria-label={`Mở khoản chi ${row.name}`} onClick={(event) => openRow(event, row.id)} onKeyDown={(event) => openRow(event, row.id)}><td className="pw-budget-table-name"><span className="pw-budget-table-icon"><Wallet size={15} /></span><span><strong>{row.name}</strong><small>{row.category || 'Chưa phân nhóm'}</small></span></td><td className="pw-budget-table-amount planned">{money(row.planned)}</td><td className="pw-budget-table-amount actual">{money(row.actual)}</td><td className="pw-budget-table-status"><BudgetState state={status} planned={row.planned} actual={row.actual} /></td></tr>
+        return <tr key={row.id} role="button" tabIndex={0} aria-label={`Mở khoản chi ${row.name}`} onClick={(event) => openRow(event, row.id)} onKeyDown={(event) => openRow(event, row.id)}><td className="pw-budget-table-name"><span className="pw-budget-table-icon"><Wallet size={15} /></span><span><strong>{row.name}</strong><small>{row.category || 'Chưa phân nhóm'}</small></span></td><td className="pw-budget-table-amount planned"><TableMoney value={row.planned} /></td><td className="pw-budget-table-amount actual"><TableMoney value={row.actual} /></td><td className="pw-budget-table-status"><BudgetState state={status} planned={row.planned} actual={row.actual} /></td></tr>
       })}</tbody>
     </table>
   </div>
 }
+function TableMoney({ value }) { return <><span className="pw-table-money-full">{money(value)}</span><span className="pw-table-money-compact">{compact(value)}</span></> }
 function BudgetState({ state, planned, actual, metric = false }) {
   const target = Math.max(Number(planned || 0), 0)
   const ratio = target > 0 ? Math.min(100, Math.round(Number(actual || 0) / target * 100)) : 0
