@@ -73,6 +73,16 @@ describe('Checklist and Budget interactions', () => {
   expect(within(dialog).getByText('Thi công')).toBeTruthy()
   expect(within(dialog).getByText('20đ')).toBeTruthy()
  })
+ it('only enables the budget group scrollbar from the sixth visible row', () => {
+  mount('budget')
+  expandGroup()
+  expect(document.querySelector('.pw-group-records.budget').classList.contains('scrollable')).toBe(false)
+  cleanup()
+  for (let index = 2; index <= 6; index += 1) mocks.collections.budget_items.rows.push({id:`budget-${index}`,name:`Khoản ${index}`,category_id:'group-1',planned:index,status:'pending'})
+  mount('budget')
+  expandGroup()
+  expect(document.querySelector('.pw-group-records.budget').classList.contains('scrollable')).toBe(true)
+ })
  it('filters unresolved payers without including assigned or cancelled payments and clears the filter', () => {
   mocks.collections.budget_items.rows.push({id:'budget-2',name:'Bàn ghế',category_id:'group-1',planned:200,status:'pending'})
   mocks.collections.budget_transactions.rows.push({id:'p5',item_id:'budget-2',amount:30,payer_id:'nam'}, {id:'p6',item_id:'budget-2',amount:40,payer_id:null,voided_at:'2026-10-17'})
