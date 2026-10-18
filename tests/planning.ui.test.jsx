@@ -83,6 +83,13 @@ describe('Checklist and Budget interactions', () => {
   expandGroup()
   expect(document.querySelector('.pw-group-records.budget').classList.contains('scrollable')).toBe(true)
  })
+ it('keeps the compact mobile budget state separate from the desktop state', () => {
+  mount('budget')
+  expandGroup()
+  const row = screen.getByRole('button',{name:'Mở Thi công'})
+  expect(row.querySelectorAll('.pw-budget-mobile-values .pw-budget-state')).toHaveLength(1)
+  expect(row.querySelectorAll(':scope > .pw-budget-state')).toHaveLength(1)
+ })
  it('filters unresolved payers without including assigned or cancelled payments and clears the filter', () => {
   mocks.collections.budget_items.rows.push({id:'budget-2',name:'Bàn ghế',category_id:'group-1',planned:200,status:'pending'})
   mocks.collections.budget_transactions.rows.push({id:'p5',item_id:'budget-2',amount:30,payer_id:'nam'}, {id:'p6',item_id:'budget-2',amount:40,payer_id:null,voided_at:'2026-10-17'})
