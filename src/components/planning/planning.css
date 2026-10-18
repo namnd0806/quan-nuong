@@ -211,4 +211,34 @@
 @media(max-width:767px){.pw-budget .pw-toolbar{gap:9px}.pw-budget .pw-filters{flex:1;min-width:0}.pw-budget-status-filter,.pw-budget-status-filter select{width:100%;min-width:0}.pw-budget .pw-tool-actions{gap:6px;flex-wrap:wrap}.pw-view-switch button{padding:7px 8px;min-height:36px}.pw-view-switch button span{display:none}.pw-ledger{min-width:570px;font-size:10px}.pw-ledger thead th{padding:10px 8px;font-size:9px}.pw-ledger td{height:46px;padding:7px 8px}.pw-ledger-group{width:110px;min-width:110px;padding:12px 9px}.pw-ledger-group strong{font-size:11px}.pw-ledger-open{font-size:11px;min-width:145px}.pw-ledger-status{font-size:9px;padding:5px}.pw-ledger-shell{border-radius:12px}}
 .pw-budget-table-shell.person .pw-budget-table-note{white-space:nowrap}
 @media(max-width:767px){.pw.pw-budget .pw-search{grid-column:1/-1;grid-row:1;max-width:none}.pw.pw-budget .pw-filters{grid-column:1;grid-row:2}.pw.pw-budget .pw-tool-actions{grid-column:2;grid-row:2}.pw.pw-budget .pw-filter-select{max-width:none}}
+/* Spreadsheet view: fixed columns fit the viewport; merged groups contain only their name. */
+.pw-ledger-shell{width:100%;min-width:0;border-radius:8px;box-shadow:none;overflow-x:hidden}
+.pw-ledger{min-width:0;width:100%;table-layout:fixed}
+.pw-ledger thead th{width:auto;padding:10px 8px;letter-spacing:0;text-transform:none;border-right:1px solid #344b65}
+.pw-ledger thead th:nth-child(1){width:20%}.pw-ledger thead th:nth-child(2){width:32%}.pw-ledger thead th:nth-child(3),.pw-ledger thead th:nth-child(4){width:14%}.pw-ledger thead th:nth-child(5){width:20%}
+.pw-ledger td{height:40px;padding:7px 8px;border-right:1px solid #2c4059;overflow-wrap:anywhere}
+.pw-ledger tbody+tbody tr:first-child>*{border-top:1px solid #4a617c}
+.pw-ledger .pw-ledger-group{width:auto;min-width:0;padding:8px;vertical-align:middle;background:#192d43;overflow-wrap:anywhere}
+.pw-ledger-group strong{font-size:12px;line-height:1.4;font-weight:600}
+.pw-ledger .pw-ledger-open{min-width:0;width:100%;min-height:26px;padding:0;font-size:12px;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+.pw-ledger-status{display:inline;padding:0;background:none!important;border:0;border-radius:0;font-size:11px;font-weight:600;white-space:normal;line-height:1.4}
+.pw-ledger-status.pending{color:#9cafc6}.pw-ledger-status.partial{color:#f1bd72}.pw-ledger-status.paid{color:#7ae1b0}
+.pw-ledger-empty{min-height:26px;font-size:11px;padding:0}
+@media(max-width:767px){
+ .pw.pw-budget .pw-toolbar{grid-template-columns:minmax(0,1fr);gap:9px}
+ .pw.pw-budget .pw-search{grid-column:1;grid-row:1;min-width:0}
+ .pw.pw-budget .pw-filters{grid-column:1;grid-row:2;min-width:0;width:100%}
+ .pw.pw-budget .pw-budget-status-filter{width:100%;min-width:0}
+ .pw.pw-budget .pw-budget-status-filter .pw-filter-select{width:100%;min-width:0;max-width:none;height:39px}
+ .pw.pw-budget .pw-tool-actions{grid-column:1;grid-row:3;width:100%;display:flex;flex-wrap:nowrap;gap:8px}
+ .pw.pw-budget .pw-view-switch{margin-right:auto}.pw.pw-budget .pw-view-switch button span{display:inline}.pw.pw-budget .pw-view-switch button{min-height:34px;font-size:10px;padding:6px 9px}
+ .pw-ledger-shell{border-radius:7px;max-height:70dvh}.pw-ledger{min-width:0;font-size:10px}
+ .pw-ledger thead th{padding:9px 4px;font-size:8px;white-space:normal;text-align:center}
+ .pw-ledger thead th:nth-child(1){width:20%}.pw-ledger thead th:nth-child(2){width:31%}.pw-ledger thead th:nth-child(3),.pw-ledger thead th:nth-child(4){width:14.5%}.pw-ledger thead th:nth-child(5){width:20%}
+ .pw-ledger td{height:39px;padding:6px 4px;font-size:10px}
+ .pw-ledger .pw-ledger-group{padding:7px 5px;min-width:0;width:auto}.pw-ledger-group strong{font-size:10px;line-height:1.5}
+ .pw-ledger .pw-ledger-open{min-width:0;font-size:10px;line-height:1.45;min-height:26px}
+ .pw-ledger .numeric{font-size:9px;letter-spacing:-.2px;text-align:right}
+ .pw-ledger-status{font-size:9px;line-height:1.4}.pw-ledger-empty{font-size:10px;gap:4px}
+}
 @media(prefers-reduced-motion:reduce){.pw-budget .pw-stats.budget .pw-stat{animation:none!important}.pw-budget-state>i{transition:none!important}}
