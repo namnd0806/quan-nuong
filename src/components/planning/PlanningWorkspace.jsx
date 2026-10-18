@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Banknote, Plus, Search, ChevronDown, ChevronUp, ChevronRight, Check, Settings2, RefreshCw, Pencil, Trash2, Wallet, Calendar, Loader2, Link as LinkIcon } from 'lucide-react'
+import { Banknote, Plus, Search, ChevronDown, ChevronUp, ChevronRight, Check, Settings2, RefreshCw, Pencil, Trash2, Wallet, Calendar, Loader2, GripVertical, Link as LinkIcon } from 'lucide-react'
 import { useCollection } from '@/hooks/useCollection'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/toast'
@@ -32,15 +32,21 @@ export default function PlanningWorkspace({ kind }) {
   const [scope, setScope] = useState('all')
   const [state, setState] = useState('all')
   const [quickView, setQuickView] = useState(null)
+  const [budgetView, setBudgetView] = useState(null)
   const [expanded, setExpanded] = useState({})
   const [draft, setDraft] = useState(null)
   const [detailId, setDetailId] = useState(() => task ? null : searchParams.get('item'))
   const [payment, setPayment] = useState(null)
   const [groupOpen, setGroupOpen] = useState(false)
   const [groupDraft, setGroupDraft] = useState(null)
+  const [groupOrder, setGroupOrder] = useState([])
+  const [draggingGroup, setDraggingGroup] = useState(null)
   const [busy, setBusy] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const syncLock = useRef(false)
+  const groupOrderRef = useRef([])
+  const draggedGroupRef = useRef(null)
+  const groupOrderChangedRef = useRef(false)
   const [uploading, setUploading] = useState(false)
   const [formError, setFormError] = useState('')
   const [groupError, setGroupError] = useState('')
@@ -50,7 +56,7 @@ export default function PlanningWorkspace({ kind }) {
   const events = useCollection('workspace_events', { filterColumn: 'entity_id', filterValue: draft?.id || detailId || '00000000-0000-0000-0000-000000000000', limit: 100 })
 
   const me = profile?.name || user?.email?.split('@')[0] || ''
-  const groups = useMemo(() => planningGroups(categories.rows, source.rows, kind).sort((a, b) => Number(b.records.length > 0) - Number(a.records.length > 0)), [categories.rows, source.rows, kind])
+  const groups = useMemo(() => planningGroups(categories.rows, source.rows, kind), [categories.rows, source.rows, kind])
   const allGroups = useMemo(() => {
     const both = planningGroups(categories.rows, tasks.rows, 'tasks')
     for (const g of planningGroups(categories.rows, budgets.rows, 'budget')) if (!both.some((existing) => existing.id === g.id)) both.push(g)
@@ -76,6 +82,12 @@ export default function PlanningWorkspace({ kind }) {
     return tasks.rows.filter((row) => ['todo','waiting','paused'].includes(row.status))
   }, [task, quickView, tasks.rows])
   const quickLabel = { todo: 'Cần làm', doing: 'Đang làm', overdue: 'Quá hạn' }
+  const budgetQuickRows = useMemo(() => {
+    if (task || !budgetView) return []
+    if (budgetView.type === 'person') return payments.rows.filter((row) => !row.voided_at && row.payer_id === budgetView.memberId).sort((a, b) => String(b.spent_at).localeCompare(String(a.spent_at)))
+    const rows = budgets.rows.map((row) => ({ ...row, actual: paymentTotal(byItem[row.id] || []) }))
+    return budgetView.type === 'actual' ? rows.filter((row) => row.actual > 0) : rows.sort((a, b) => Number(b.planned || 0) - Number(a.planned || 0))
+  }, [task, budgetView, payments.rows, budgets.rows, byItem])
   const disabled = busy || uploading
   const set = (key, value) => setDraft((d) => ({ ...d, [key]: value }))
   const refresh = async () => { await Promise.all([tasks.refetch(), budgets.refetch(), payments.refetch(), categories.refetch(), members.refetch(), events.refetch()]) }
@@ -88,6 +100,7 @@ export default function PlanningWorkspace({ kind }) {
     setState('all')
     setExpanded({})
     setQuickView(null)
+    setBudgetView(null)
     const collections = [tasks, budgets, payments, categories, members, events]
     const labels = ['công việc', 'ngân sách', 'thanh toán', 'nhóm', 'thành viên', 'lịch sử']
     try {
@@ -137,7 +150,65 @@ export default function PlanningWorkspace({ kind }) {
       await tasks.refetch(); await events.refetch()
     } catch (error) { report(error) } finally { setBusy(false) }
   }
-  const openGroupManager = () => { setGroupDraft({ id: crypto.randomUUID(), name: '', icon: 'folder' }); setGroupError(''); setGroupOpen(true) }
+  const openGroupManager = () => {
+    const order = [...categories.rows]
+    groupOrderRef.current = order
+    groupOrderChangedRef.current = false
+    setGroupOrder(order)
+    setGroupDraft({ id: crypto.randomUUID(), name: '', icon: 'folder' })
+    setGroupError(''); setGroupOpen(true)
+  }
+  const moveGroup = (sourceId, targetId) => {
+    if (!sourceId || !targetId || sourceId === targetId) return
+    const current = groupOrderRef.current
+    const from = current.findIndex((group) => group.id === sourceId)
+    const to = current.findIndex((group) => group.id === targetId)
+    if (from < 0 || to < 0) return
+    const next = [...current]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    groupOrderRef.current = next
+    groupOrderChangedRef.current = true
+    setGroupOrder(next)
+  }
+  const persistGroupOrder = async (order = groupOrderRef.current) => {
+    if (!groupOrderChangedRef.current || busy) return
+    setBusy(true); setGroupError('')
+    try {
+      const { error } = await supabase.rpc('reorder_main_categories', { p_ids: order.map((group) => group.id) })
+      if (error) throw error
+      groupOrderChangedRef.current = false
+      await categories.refetch()
+      toast.success('Đã lưu thứ tự nhóm.')
+    } catch (error) { setGroupError(error.message); await categories.refetch() } finally { setBusy(false) }
+  }
+  const startGroupDrag = (event, id) => {
+    draggedGroupRef.current = id
+    groupOrderChangedRef.current = false
+    setDraggingGroup(id)
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+  const dragGroup = (event) => {
+    if (!draggedGroupRef.current) return
+    const target = document.elementFromPoint?.(event.clientX, event.clientY)?.closest?.('[data-group-id]')?.dataset.groupId
+    if (target) moveGroup(draggedGroupRef.current, target)
+  }
+  const finishGroupDrag = () => {
+    if (!draggedGroupRef.current) return
+    draggedGroupRef.current = null
+    setDraggingGroup(null)
+    persistGroupOrder()
+  }
+  const moveGroupWithKeyboard = (event, id) => {
+    if (!['ArrowUp','ArrowDown'].includes(event.key)) return
+    event.preventDefault()
+    const current = groupOrderRef.current
+    const index = current.findIndex((group) => group.id === id)
+    const target = current[index + (event.key === 'ArrowUp' ? -1 : 1)]
+    if (!target) return
+    moveGroup(id, target.id)
+    queueMicrotask(() => persistGroupOrder())
+  }
   const saveGroup = async (e) => {
     e.preventDefault(); if (disabled) return
     const name = groupDraft.name.trim().replace(/\s+/g, ' ')
@@ -185,7 +256,7 @@ export default function PlanningWorkspace({ kind }) {
 
   return <div className={`pw ${task ? 'pw-tasks' : 'pw-budget'}`}>
     <header className="pw-titlebar pw-compact-header"><h1>{task ? 'Công việc' : 'Ngân sách'}</h1><button className="pw-primary" aria-label={task ? 'Thêm công việc' : 'Thêm khoản ngân sách'} onClick={() => openNew()}><Plus size={19} /><span className="pw-add-label">Thêm<span className="pw-desktop-label"> {task ? 'công việc' : 'ngân sách'}</span></span></button></header>
-    {task ? <div className="pw-stats"><Stat label="Cần làm" value={stats.todo} onClick={() => setQuickView('todo')} /><Stat label="Đang làm" value={stats.doing} tone="amber" onClick={() => setQuickView('doing')} /><Stat label="Quá hạn" value={stats.overdue} tone="red" onClick={() => setQuickView('overdue')} /></div> : <><div className="pw-stats budget" style={{ '--people-count': members.rows.length }}><Stat label="Tổng dự toán" value={money(summary.planned)} tone="blue" /><Stat label="Tổng thực chi" value={money(summary.actual)} tone="teal" />{summary.people.map((p, index) => <Stat key={p.id} label={`${personName(p.name)} đã chi`} value={money(p.spent)} tone={`person person-${index % 2}`} />)}</div>{summary.unassigned !== 0 && <button className={`pw-unassigned ${state === 'unassigned' ? 'active' : ''}`} aria-pressed={state === 'unassigned'} onClick={() => { setSearch(''); setState(state === 'unassigned' ? 'all' : 'unassigned'); setExpanded({}) }}><span>Chưa rõ người trả <strong>{money(summary.unassigned)}</strong></span><span>{state === 'unassigned' ? 'Bỏ lọc' : 'Xem khoản chi'} <ChevronDown size={14} /></span></button>}</>}
+    {task ? <div className="pw-stats"><Stat label="Cần làm" value={stats.todo} onClick={() => setQuickView('todo')} /><Stat label="Đang làm" value={stats.doing} tone="amber" onClick={() => setQuickView('doing')} /><Stat label="Quá hạn" value={stats.overdue} tone="red" onClick={() => setQuickView('overdue')} /></div> : <><div className="pw-stats budget" style={{ '--people-count': members.rows.length }}><Stat label="Tổng dự toán" value={money(summary.planned)} tone="blue" onClick={() => setBudgetView({ type:'planned', label:'Tổng dự toán' })} /><Stat label="Tổng thực chi" value={money(summary.actual)} tone="teal" onClick={() => setBudgetView({ type:'actual', label:'Tổng thực chi' })} />{summary.people.map((p, index) => <Stat key={p.id} label={`${personName(p.name)} đã chi`} value={money(p.spent)} tone={`person person-${index % 2}`} onClick={() => setBudgetView({ type:'person', memberId:p.id, label:`${personName(p.name)} đã chi` })} />)}</div>{summary.unassigned !== 0 && <button className={`pw-unassigned ${state === 'unassigned' ? 'active' : ''}`} aria-pressed={state === 'unassigned'} onClick={() => { setSearch(''); setState(state === 'unassigned' ? 'all' : 'unassigned'); setExpanded({}) }}><span>Chưa rõ người trả <strong>{money(summary.unassigned)}</strong></span><span>{state === 'unassigned' ? 'Bỏ lọc' : 'Xem khoản chi'} <ChevronDown size={14} /></span></button>}</>}
     <div className="pw-toolbar"><div className="pw-search"><Search size={18} /><input aria-label="Tìm kiếm" placeholder={task ? 'Tìm công việc…' : 'Tìm khoản chi…'} value={search} onChange={(e) => setSearch(e.target.value)} /></div><div className="pw-filters">{task ? <>{[['all','Tất cả'],['mine','Của tôi'],['both','Cả hai']].map(([key,label]) => <button className={`pw-chip ${scope === key ? 'active' : ''}`} aria-pressed={scope === key} key={key} onClick={() => setScope(key)}>{label}</button>)}<select className="pw-filter-select" aria-label="Lọc trạng thái" value={state} onChange={(e) => setState(e.target.value)}><option value="all">Mọi trạng thái</option>{Object.entries(taskStates).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></> : [['all','Tất cả'],['unpaid','Còn thanh toán']].map(([key,label]) => <button key={key} onClick={() => setState(key)} className={`pw-chip ${state === key ? 'active' : ''}`} aria-pressed={state === key}>{label}</button>)}</div><div className="pw-tool-actions"><button className="pw-secondary pw-manage-groups" aria-label="Quản lý nhóm" title="Quản lý nhóm" onClick={openGroupManager}><Settings2 size={17} /><span>Nhóm</span></button><button className="pw-reload" onClick={syncNow} disabled={busy || syncing} aria-busy={syncing} aria-label={syncing ? "Đang đồng bộ dữ liệu" : "Tải lại dữ liệu"} title={syncing ? "Đang đồng bộ…" : "Tải lại dữ liệu"}><RefreshCw size={17} className={syncing ? "animate-spin" : undefined} /></button></div></div>
     {error && <div role="alert" className="pw-error">Không tải được dữ liệu: {error.message} <button onClick={syncNow} disabled={syncing}>Thử lại</button></div>}
     {loading ? <div className="pw-loading"><Loader2 className="animate-spin" size={21} />Đang đồng bộ…</div> : <div className="pw-groups">{groups.map((g) => {
@@ -193,11 +264,11 @@ export default function PlanningWorkspace({ kind }) {
       if (!rows.length && (search || state !== 'all' || scope !== 'all')) return null
       const open = expanded[g.id] ?? Boolean(search || state !== 'all' || scope !== 'all')
       const spent = g.records.reduce((n, row) => n + paymentTotal(byItem[row.id] || []), 0)
-      return <section className="pw-group" key={g.id} style={{ '--group-accent': ['#6caeff','#54d8bc','#f3b869','#b49aff','#ef91bb','#78cddd'][Array.from(g.id).reduce((sum, c) => sum + c.codePointAt(0), 0) % 6] }}><button className="pw-group-header" aria-expanded={open} onClick={() => setExpanded((prev) => ({ ...prev, [g.id]: !open }))}><span className="pw-group-icon"><GroupIcon name={g.icon} /></span><span className="pw-group-name"><strong>{g.name}</strong>{task ? <small>{g.records.length ? `${g.records.filter((t) => t.status === 'done').length} hoàn thành · ${g.records.length} công việc` : 'Thêm công việc đầu tiên cho nhóm'}</small> : <small className="pw-spent"><Banknote size={15} aria-hidden="true" />Đã chi {money(spent)}</small>}</span><span className="pw-count">{task ? `${g.records.filter((t) => t.status === 'done').length}/${g.records.length}` : `${g.records.length} khoản`}</span>{open ? <ChevronUp size={17} /> : <ChevronDown size={17} />}</button>{open && <div><div className={`pw-group-columns ${task ? '' : 'budget'}`}><span>{task ? 'Công việc' : 'Khoản chi'}</span><span>{task ? 'Phụ trách' : 'Dự toán'}</span><span>{task ? 'Trạng thái' : 'Thực chi'}</span><span>{task ? 'Ưu tiên' : 'Thanh toán'}</span>{task && <span>Hạn hoàn thành</span>}</div>{rows.map((row) => {
+      return <section className="pw-group" key={g.id} style={{ '--group-accent': ['#6caeff','#54d8bc','#f3b869','#b49aff','#ef91bb','#78cddd'][Array.from(g.id).reduce((sum, c) => sum + c.codePointAt(0), 0) % 6] }}><button className="pw-group-header" aria-expanded={open} onClick={() => setExpanded((prev) => ({ ...prev, [g.id]: !open }))}><span className="pw-group-icon"><GroupIcon name={g.icon} /></span><span className="pw-group-name"><strong>{g.name}</strong>{task ? <small>{g.records.length ? `${g.records.filter((t) => t.status === 'done').length} hoàn thành · ${g.records.length} công việc` : 'Thêm công việc đầu tiên cho nhóm'}</small> : <small className="pw-spent"><Banknote size={15} aria-hidden="true" />Đã chi {money(spent)}</small>}</span><span className="pw-count">{task ? `${g.records.filter((t) => t.status === 'done').length}/${g.records.length}` : `${g.records.length} khoản`}</span>{open ? <ChevronUp size={17} /> : <ChevronDown size={17} />}</button>{open && <div><div className={`pw-group-columns ${task ? '' : 'budget'}`}><span>{task ? 'Công việc' : 'Khoản chi'}</span><span>{task ? 'Phụ trách' : 'Dự toán'}</span><span>{task ? 'Trạng thái' : 'Thực chi'}</span><span>{task ? 'Ưu tiên' : 'Thanh toán'}</span>{task && <span>Hạn hoàn thành</span>}</div><div className={`pw-group-records ${task ? 'tasks' : 'budget'}`}>{rows.map((row) => {
         const actual = paymentTotal(byItem[row.id] || [])
         const st = task ? row.status : budgetPaymentState(row, actual)
-        return <article key={row.id} className={`pw-record ${task ? '' : 'budget'}`} role="button" tabIndex={0} aria-label={`Mở ${task ? row.title : row.name}`} onClick={() => openRecord(row)} onKeyDown={(e) => { if (e.target === e.currentTarget && ['Enter',' '].includes(e.key)) { e.preventDefault(); openRecord(row) } }}><div className="pw-row-title">{task ? <button className={`pw-check ${row.status === 'done' ? 'checked' : ''}`} disabled={busy} aria-label={`${row.status === 'done' ? 'Mở lại' : 'Hoàn thành'} ${row.title}`} onClick={(e) => { e.stopPropagation(); toggleTask(row) }}>{row.status === 'done' && <Check size={15} />}</button> : <Wallet size={21} color="#9dbbdf" />}<div className="pw-row-content"><div className="pw-budget-titleline"><strong className={task && row.status === 'done' ? 'pw-complete' : ''}>{task ? row.title : row.name}</strong>{!task && <span className="pw-budget-mobile-status"><Pill value={st}>{budgetStates[st]}</Pill></span>}</div>{!task && <div className="pw-budget-mobile-values"><MoneyMetric label="Dự toán" value={compact(row.planned)} /><MoneyMetric label="Thực chi" value={compact(actual)} spent /></div>}<div className="pw-mobile-meta">{task && <span className="pw-task-meta pw-task-owner"><span className="pw-avatar">{personName(row.assignee).slice(0,1) || '—'}</span><span>{personName(row.assignee) || 'Chưa giao'}</span></span>}{task && <span className="pw-task-status"><Pill value={st}>{taskStates[st] || st}</Pill></span>}{task && row.deadline && <span className={`pw-task-meta pw-task-date ${isOverdue(row) ? 'overdue' : ''}`}><Calendar size={13} aria-hidden="true" /><span>{date(row.deadline)}</span></span>}</div></div></div>{task ? <><span className="pw-owner"><span className="pw-avatar">{personName(row.assignee).slice(0,1) || '—'}</span>{personName(row.assignee) || 'Chưa giao'}</span><Pill value={st}>{taskStates[st] || st}</Pill><Pill value={row.priority}>{priorities[row.priority] || row.priority}</Pill><span className={`pw-row-date ${isOverdue(row) ? 'overdue' : ''}`}>{date(row.deadline)}</span></> : <><span className="pw-amount pw-budget-planned">{money(row.planned)}</span><span className="pw-amount pw-budget-actual">{money(actual)}</span><Pill value={st}>{budgetStates[st]}</Pill></>}</article>
-      })}{!rows.length && <div className="pw-empty">Nhóm chưa có {task ? 'công việc' : 'khoản chi'}.</div>}<button className="pw-add-row" onClick={() => openNew(g.id)}><Plus size={16} />{task ? 'Thêm việc vào nhóm' : 'Thêm khoản chi'}</button></div>}</section>
+        return <article key={row.id} className={`pw-record ${task ? '' : 'budget'}`} role="button" tabIndex={0} aria-label={`Mở ${task ? row.title : row.name}`} onClick={() => openRecord(row)} onKeyDown={(e) => { if (e.target === e.currentTarget && ['Enter',' '].includes(e.key)) { e.preventDefault(); openRecord(row) } }}><div className="pw-row-title">{task ? <button className={`pw-check ${row.status === 'done' ? 'checked' : ''}`} disabled={busy} aria-label={`${row.status === 'done' ? 'Mở lại' : 'Hoàn thành'} ${row.title}`} onClick={(e) => { e.stopPropagation(); toggleTask(row) }}>{row.status === 'done' && <Check size={15} />}</button> : <Wallet size={21} color="#9dbbdf" />}<div className="pw-row-content"><div className="pw-budget-titleline"><strong className={task && row.status === 'done' ? 'pw-complete' : ''}>{task ? row.title : row.name}</strong></div>{!task && <div className="pw-budget-mobile-values"><MoneyMetric label="Dự toán" value={compact(row.planned)} /><MoneyMetric label="Thực chi" value={compact(actual)} spent /><BudgetState state={st} planned={row.planned} actual={actual} metric /></div>}<div className="pw-mobile-meta">{task && <span className="pw-task-meta pw-task-owner"><span className="pw-avatar">{personName(row.assignee).slice(0,1) || '—'}</span><span>{personName(row.assignee) || 'Chưa giao'}</span></span>}{task && <span className="pw-task-status"><Pill value={st}>{taskStates[st] || st}</Pill></span>}{task && row.deadline && <span className={`pw-task-meta pw-task-date ${isOverdue(row) ? 'overdue' : ''}`}><Calendar size={13} aria-hidden="true" /><span>{date(row.deadline)}</span></span>}</div></div></div>{task ? <><span className="pw-owner"><span className="pw-avatar">{personName(row.assignee).slice(0,1) || '—'}</span>{personName(row.assignee) || 'Chưa giao'}</span><Pill value={st}>{taskStates[st] || st}</Pill><Pill value={row.priority}>{priorities[row.priority] || row.priority}</Pill><span className={`pw-row-date ${isOverdue(row) ? 'overdue' : ''}`}>{date(row.deadline)}</span></> : <><span className="pw-amount pw-budget-planned">{money(row.planned)}</span><span className="pw-amount pw-budget-actual">{money(actual)}</span><BudgetState state={st} planned={row.planned} actual={actual} /></>}</article>
+      })}{!rows.length && <div className="pw-empty">Nhóm chưa có {task ? 'công việc' : 'khoản chi'}.</div>}</div><button className="pw-add-row" onClick={() => openNew(g.id)}><Plus size={16} />{task ? 'Thêm việc vào nhóm' : 'Thêm khoản chi'}</button></div>}</section>
     })}{!groups.length && <div className="pw-empty">Tạo nhóm đầu tiên để bắt đầu.</div>}{groups.length > 0 && !groups.some((g) => g.records.some(matches) || (!g.records.length && !search && scope === 'all' && state === 'all')) && <div className="pw-empty">Không có bản ghi phù hợp.</div>}</div>}
     <PlanningNav />
 
@@ -207,6 +278,18 @@ export default function PlanningWorkspace({ kind }) {
         const overdue = isOverdue(row)
         return <article key={row.id} className={`pw-quick-task ${overdue ? 'overdue' : ''}`} role="button" tabIndex={0} aria-label={`Mở nhanh ${row.title}`} onClick={() => { setQuickView(null); openRecord(row) }} onKeyDown={(e) => { if (e.target === e.currentTarget && ['Enter',' '].includes(e.key)) { e.preventDefault(); setQuickView(null); openRecord(row) } }}><button className={`pw-check ${row.status === 'done' ? 'checked' : ''}`} disabled={busy} aria-label={`Hoàn thành ${row.title}`} onClick={(e) => { e.stopPropagation(); toggleTask(row) }}>{row.status === 'done' && <Check size={15} />}</button><div className="pw-quick-content"><span className="pw-quick-group"><GroupIcon name={group?.icon} />{group?.name || row.dept || 'Chưa phân nhóm'}</span><strong>{row.title}</strong><div className="pw-quick-meta"><span className="pw-quick-owner"><span className="pw-avatar">{personName(row.assignee).slice(0,1) || '—'}</span>{personName(row.assignee) || 'Chưa giao'}</span><Pill value={row.status}>{taskStates[row.status] || row.status}</Pill>{row.deadline && <span className={`pw-quick-date ${overdue ? 'overdue' : ''}`}><Calendar size={13} aria-hidden="true" />{date(row.deadline)}</span>}</div></div><ChevronRight className="pw-quick-arrow" size={19} aria-hidden="true" /></article>
       })}{!quickTasks.length && <div className="pw-quick-empty"><Check size={24} /><strong>Không có công việc</strong><span>Danh sách này hiện đang trống.</span></div>}</div>
+    </PlanningPanel>
+
+    <PlanningPanel open={!task && Boolean(budgetView)} title={`${budgetView?.label || 'Ngân sách'} · ${budgetQuickRows.length}`} onClose={() => setBudgetView(null)} variant="quick">
+      <div className="pw-budget-quick-list">{budgetQuickRows.map((row) => {
+        if (budgetView?.type === 'person') {
+          const item = budgets.rows.find((budget) => budget.id === row.item_id)
+          if (!item) return null
+          return <article key={row.id} className="pw-budget-quick-row payment" role="button" tabIndex={0} aria-label={`Mở khoản chi ${item.name}`} onClick={() => { setBudgetView(null); setDetailId(item.id) }} onKeyDown={(e) => { if (['Enter',' '].includes(e.key)) { e.preventDefault(); setBudgetView(null); setDetailId(item.id) } }}><span className="pw-budget-quick-icon"><Banknote size={18} /></span><div><span className="pw-quick-group">{item.category || 'Chưa phân nhóm'}</span><strong>{item.name}</strong>{row.note && <small>{row.note}</small>}<span className="pw-budget-quick-date"><Calendar size={12} />{date(row.spent_at)}</span></div><strong className="pw-budget-quick-amount">{money(row.amount)}</strong><ChevronRight size={18} className="pw-quick-arrow" /></article>
+        }
+        const status = budgetPaymentState(row, row.actual)
+        return <article key={row.id} className="pw-budget-quick-row" role="button" tabIndex={0} aria-label={`Mở khoản chi ${row.name}`} onClick={() => { setBudgetView(null); setDetailId(row.id) }} onKeyDown={(e) => { if (['Enter',' '].includes(e.key)) { e.preventDefault(); setBudgetView(null); setDetailId(row.id) } }}><span className="pw-budget-quick-icon"><Wallet size={18} /></span><div><span className="pw-quick-group">{row.category || 'Chưa phân nhóm'}</span><strong>{row.name}</strong><div className="pw-budget-quick-money"><span>Dự toán <strong>{money(row.planned)}</strong></span><span>Thực chi <strong>{money(row.actual)}</strong></span></div></div><BudgetState state={status} planned={row.planned} actual={row.actual} /><ChevronRight size={18} className="pw-quick-arrow" /></article>
+      })}{!budgetQuickRows.length && <div className="pw-quick-empty"><Banknote size={24} /><strong>Chưa có khoản chi</strong><span>Dữ liệu mới sẽ tự xuất hiện tại đây.</span></div>}</div>
     </PlanningPanel>
 
     <PlanningPanel open={Boolean(draft)} title={task ? (draft?.updated_at ? 'Chi tiết công việc' : 'Thêm công việc') : (draft?.updated_at ? 'Sửa khoản ngân sách' : 'Thêm khoản ngân sách')} busy={disabled} onClose={() => setDraft(null)} wide footer={<><button className="pw-secondary" disabled={disabled} onClick={() => setDraft(null)}>Đóng</button><BusyButton busy={disabled} type="submit" form="planning-record-form">Lưu thay đổi</BusyButton></>}>
@@ -226,7 +309,7 @@ export default function PlanningWorkspace({ kind }) {
     </PlanningPanel>
 
     <PlanningPanel open={groupOpen} title="Quản lý nhóm" onClose={() => setGroupOpen(false)} busy={busy} footer={<><button className="pw-secondary" disabled={busy} onClick={() => setGroupDraft({ id: crypto.randomUUID(), name:'', icon:'folder' })}>Nhóm mới</button><BusyButton busy={busy} form="planning-group-form" type="submit">{groupDraft?.created_at ? 'Lưu nhóm' : 'Tạo nhóm'}</BusyButton></>}>
-      <div className="pw-group-manager-list">{categories.rows.map((g) => <button key={g.id} onClick={() => { setGroupDraft(g); setGroupError('') }}><GroupIcon name={g.icon} /><span>{g.name}</span><Pencil size={13} /></button>)}</div>{groupDraft && <form id="planning-group-form" className="pw-edit-form pw-group-form" onSubmit={saveGroup}><div className="pw-form-grid"><Field label="Tên nhóm *" full><input required maxLength={120} value={groupDraft.name} onChange={(e) => setGroupDraft((g) => ({ ...g, name:e.target.value }))} placeholder="Ví dụ: Mặt bằng & thi công" /></Field><Field label="Biểu tượng" full><div className="pw-icon-picker" role="region" aria-label="Kho biểu tượng" tabIndex={0}>{iconSections.map((section) => <section className={`pw-icon-section ${section.tone}`} key={section.name}><h4>{section.name}</h4><div className="pw-icon-grid">{section.items.map(([key, label]) => <button type="button" aria-label={label} title={label} aria-pressed={groupDraft.icon === key} key={key} className={groupDraft.icon === key ? 'selected' : ''} onClick={() => setGroupDraft((g) => ({ ...g, icon:key }))}><GroupIcon name={key} /><span>{label}</span></button>)}</div></section>)}</div></Field></div>{groupError && <p className="pw-error" role="alert">{groupError}</p>}</form>}
+      <p className="pw-group-order-help"><GripVertical size={15} />Giữ và kéo để đổi thứ tự nhóm</p><div className="pw-group-manager-list pw-sortable-groups">{groupOrder.map((g, index) => <div key={g.id} data-group-id={g.id} className={`pw-sortable-group ${draggingGroup === g.id ? 'dragging' : ''}`}><button type="button" className="pw-drag-handle" aria-label={`Kéo sắp xếp ${g.name}`} title="Kéo để đổi vị trí · dùng phím lên/xuống nếu cần" onPointerDown={(e) => startGroupDrag(e, g.id)} onPointerMove={dragGroup} onPointerUp={finishGroupDrag} onPointerCancel={finishGroupDrag} onKeyDown={(e) => moveGroupWithKeyboard(e, g.id)}><GripVertical size={18} /><span>{index + 1}</span></button><button type="button" className="pw-group-edit" onClick={() => { setGroupDraft(g); setGroupError('') }}><GroupIcon name={g.icon} /><span>{g.name}</span><Pencil size={13} /></button></div>)}</div>{groupDraft && <form id="planning-group-form" className="pw-edit-form pw-group-form" onSubmit={saveGroup}><div className="pw-form-grid"><Field label="Tên nhóm *" full><input required maxLength={120} value={groupDraft.name} onChange={(e) => setGroupDraft((g) => ({ ...g, name:e.target.value }))} placeholder="Ví dụ: Mặt bằng & thi công" /></Field><Field label="Biểu tượng" full><div className="pw-icon-picker" role="region" aria-label="Kho biểu tượng" tabIndex={0}>{iconSections.map((section) => <section className={`pw-icon-section ${section.tone}`} key={section.name}><h4>{section.name}</h4><div className="pw-icon-grid">{section.items.map(([key, label]) => <button type="button" aria-label={label} title={label} aria-pressed={groupDraft.icon === key} key={key} className={groupDraft.icon === key ? 'selected' : ''} onClick={() => setGroupDraft((g) => ({ ...g, icon:key }))}><GroupIcon name={key} /><span>{label}</span></button>)}</div></section>)}</div></Field></div>{groupError && <p className="pw-error" role="alert">{groupError}</p>}</form>}
     </PlanningPanel>
 
     <PlanningPanel open={Boolean(confirm)} title={confirm?.type === 'void' ? 'Hủy khoản chi' : 'Xóa bản ghi'} busy={busy} onClose={() => setConfirm(null)} footer={<><button className="pw-secondary" disabled={busy} onClick={() => setConfirm(null)}>Quay lại</button><BusyButton busy={busy} type="submit" form="planning-confirm-form">Xác nhận</BusyButton></>}>
@@ -236,4 +319,10 @@ export default function PlanningWorkspace({ kind }) {
 }
 
 function MoneyMetric({ label, value, spent = false }) { return <span className={`pw-money-metric ${spent ? 'spent' : ''}`}><small>{label}</small><strong>{spent && <Banknote size={13} aria-hidden="true" />}{value}</strong></span> }
+function BudgetState({ state, planned, actual, metric = false }) {
+  const target = Math.max(Number(planned || 0), 0)
+  const ratio = target > 0 ? Math.min(100, Math.round(Number(actual || 0) / target * 100)) : 0
+  const Icon = state === 'paid' ? Check : state === 'partial' ? Banknote : Wallet
+  return <span className={`pw-budget-state ${state} ${metric ? 'metric' : ''}`}><span className="pw-budget-state-icon"><Icon size={13} /></span><span className="pw-budget-state-copy"><strong>{budgetStates[state]}</strong><small>{ratio}% dự toán</small></span><i style={{ '--budget-progress': `${ratio}%` }} /></span>
+}
 function SummaryLine({ label, value }) { return <div className="pw-summary-line"><span>{label}</span><strong>{value}</strong></div> }

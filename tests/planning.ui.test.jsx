@@ -66,6 +66,13 @@ describe('Checklist and Budget interactions', () => {
   fireEvent.click(within(dialog).getByRole('button',{name:'Lưu khoản chi'}))
   await waitFor(()=>expect(mocks.rpc).toHaveBeenCalledWith('save_payment',expect.objectContaining({p_expected:null,p_values:expect.objectContaining({item_id:'budget-1',payer_id:'phuong',amount:20000000})})))
  })
+ it('opens each owner budget card as a payment drill-down', () => {
+  mount('budget')
+  fireEvent.click(screen.getByRole('button',{name:'Xem nam đã chi (20đ)'}))
+  const dialog=screen.getByRole('dialog',{name:'Nam đã chi · 1'})
+  expect(within(dialog).getByText('Thi công')).toBeTruthy()
+  expect(within(dialog).getByText('20đ')).toBeTruthy()
+ })
  it('filters unresolved payers without including assigned or cancelled payments and clears the filter', () => {
   mocks.collections.budget_items.rows.push({id:'budget-2',name:'Bàn ghế',category_id:'group-1',planned:200,status:'pending'})
   mocks.collections.budget_transactions.rows.push({id:'p5',item_id:'budget-2',amount:30,payer_id:'nam'}, {id:'p6',item_id:'budget-2',amount:40,payer_id:null,voided_at:'2026-10-17'})
@@ -136,6 +143,13 @@ describe('Checklist and Budget interactions', () => {
   fireEvent.click(within(dialog).getByRole('button',{name:'Thiết bị'}))
   fireEvent.click(within(dialog).getByRole('button',{name:'Tạo nhóm'}))
   await waitFor(()=>expect(mocks.collections.main_categories.create).toHaveBeenCalledWith(expect.objectContaining({name:'Thiết bị',icon:'equipment'})))
+ })
+ it('reorders shared groups with the keyboard drag handle and persists one atomic order', async () => {
+  mocks.collections.main_categories.rows.push({id:'group-2',name:'Thiết bị',icon:'equipment',sort:2})
+  mount('tasks')
+  fireEvent.click(screen.getByRole('button',{name:'Quản lý nhóm'}))
+  fireEvent.keyDown(screen.getByRole('button',{name:'Kéo sắp xếp Mặt bằng & thi công'}),{key:'ArrowDown'})
+  await waitFor(()=>expect(mocks.rpc).toHaveBeenCalledWith('reorder_main_categories',{p_ids:['group-2','group-1']}))
  })
  it('requires a cancellation reason and calls the void RPC rather than deleting payment history', async () => {
   mount('budget','/budget?item=budget-1')
