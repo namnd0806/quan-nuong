@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 import { Calendar, ImageDown, Loader2, X } from 'lucide-react'
-import { toPng } from 'html-to-image'
+import { toBlob } from 'html-to-image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
@@ -21,7 +21,7 @@ export default function FoodCostReportPanel({ open, onClose, data }) {
     if (!reportRef.current || exporting) return
     setExporting(true)
     try {
-      const dataUrl = await toPng(reportRef.current, {
+      const blob = await toBlob(reportRef.current, {
         cacheBust: true,
         pixelRatio: 2,
         backgroundColor: '#071426',
@@ -29,10 +29,26 @@ export default function FoodCostReportPanel({ open, onClose, data }) {
         height: reportRef.current.scrollHeight,
         style: { width: '800px', maxWidth: 'none' },
       })
+      if (!blob) throw new Error('Không tạo được tệp ảnh')
+      const fileName = `bao-cao-food-cost-${now.toISOString().slice(0, 10)}.png`
+      const file = new File([blob], fileName, { type: 'image/png' })
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'Báo cáo Food Cost' })
+          toast.success('Ảnh báo cáo đã sẵn sàng để lưu hoặc gửi đi.')
+          return
+        } catch (shareError) {
+          if (shareError.name === 'AbortError') return
+        }
+      }
+
+      const objectUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.download = `bao-cao-food-cost-${now.toISOString().slice(0, 10)}.png`
-      link.href = dataUrl
+      link.download = fileName
+      link.href = objectUrl
       link.click()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
       toast.success('Đã tạo ảnh báo cáo. Bạn có thể lưu hoặc gửi ảnh ngay.')
     } catch (error) {
       toast.error(`Không thể xuất ảnh: ${error.message}`)
