@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { LayoutList, Table2, Banknote, Plus, Search, ChevronDown, ChevronUp, ChevronRight, Check, Settings2, RefreshCw, Pencil, Trash2, Wallet, Calendar, Loader2, GripVertical, Link as LinkIcon, Sheet, CloudUpload, ShieldCheck } from 'lucide-react'
+import { LayoutList, Table2, Banknote, Plus, Search, ChevronDown, ChevronUp, ChevronRight, Check, Settings2, RefreshCw, Pencil, Trash2, Wallet, Calendar, Loader2, GripVertical, Link as LinkIcon, Sheet, CloudUpload, ShieldCheck, StickyNote } from 'lucide-react'
 import { useCollection } from '@/hooks/useCollection'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/toast'
@@ -379,17 +379,32 @@ function BudgetGroupTable({ groups, matches, byItem, members, onOpen, onAdd, fil
   const nam = members.find((member) => personKey(member.name) === 'nam') || members.find((member) => personKey(member.name).startsWith('nam'))
   const phuong = members.find((member) => personKey(member.name) === 'phuong') || members.find((member) => personKey(member.name).startsWith('phuong'))
   const personSpent = (payments, member) => member ? payments.filter((payment) => !payment.voided_at && payment.payer_id === member.id).reduce((sum, payment) => sum + Number(payment.amount || 0), 0) : 0
+  const enriched = visible.map((group) => ({ ...group, records:group.records.map((row) => {
+    const payments = byItem[row.id] || []
+    const actual = paymentTotal(payments)
+    return { ...row, actual, namSpent:personSpent(payments, nam), phuongSpent:personSpent(payments, phuong), paymentState:budgetPaymentState(row, actual) }
+  }) }))
+  const totals = enriched.flatMap((group) => group.records).reduce((sum, row) => ({ planned:sum.planned + Number(row.planned || 0), actual:sum.actual + row.actual, nam:sum.nam + row.namSpent, phuong:sum.phuong + row.phuongSpent }), { planned:0, actual:0, nam:0, phuong:0 })
+  const openRow = (event, row) => {
+    if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return
+    if (event.type === 'keydown') event.preventDefault()
+    onOpen(row)
+  }
   return <div className="pw-ledger-shell" role="region" aria-label="Bảng ngân sách theo nhóm" tabIndex={0}>
     <table className="pw-ledger">
-      <thead><tr><th>Nhóm chi phí</th><th>Hạng mục</th><th className="numeric">Dự toán</th><th className="numeric">Nam đã chi</th><th className="numeric">Phương đã chi</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead>
-      {visible.map((g) => <tbody key={g.id}>{g.records.length ? g.records.map((row,index) => {
-        const rowPayments=byItem[row.id] || []
-        const actual=paymentTotal(rowPayments)
-        const namSpent=personSpent(rowPayments,nam)
-        const phuongSpent=personSpent(rowPayments,phuong)
-        const status=budgetPaymentState(row,actual)
-        return <tr key={row.id}>{index === 0 && <th className="pw-ledger-group" scope="rowgroup" rowSpan={g.records.length}><strong>{g.name}</strong></th>}<td><button className="pw-ledger-open" onClick={() => onOpen(row)} aria-label={`Mở ${row.name}`}>{row.name}</button></td><td className="numeric planned"><TableMoney value={row.planned} /></td><td className="numeric person nam"><TableMoney value={namSpent} /></td><td className="numeric person phuong"><TableMoney value={phuongSpent} /></td><td><span className={`pw-ledger-status ${status}`}>{status === 'partial' ? 'Một phần' : status === 'paid' ? 'Đã trả' : 'Chưa chi'}</span></td><td className="pw-ledger-note" title={row.note || ''}>{row.note || '—'}</td></tr>
-      }) : <tr><th className="pw-ledger-group" scope="rowgroup"><strong>{g.name}</strong></th><td colSpan={6}><button className="pw-ledger-empty" onClick={() => onAdd(g.id)}><Plus size={12} />Thêm khoản chi</button></td></tr>}</tbody>)}
+      <thead><tr><th className="pw-desktop-group-col">Nhóm chi phí</th><th>Hạng mục</th><th className="numeric">Dự toán</th><th className="numeric">Nam</th><th className="numeric">Phương</th><th className="pw-status-col">Trạng thái</th><th className="pw-note-col">Ghi chú</th></tr></thead>
+      {enriched.map((g) => {
+        const groupTotals = g.records.reduce((sum, row) => ({ planned:sum.planned + Number(row.planned || 0), actual:sum.actual + row.actual, nam:sum.nam + row.namSpent, phuong:sum.phuong + row.phuongSpent }), { planned:0, actual:0, nam:0, phuong:0 })
+        return <tbody key={g.id}>
+          <tr className="pw-mobile-group-row"><th colSpan={7}><span>{g.name}</span><small>{g.records.length} khoản</small></th></tr>
+          {g.records.length ? <>{g.records.map((row,index) => <tr className="pw-ledger-data" key={row.id} role="button" tabIndex={0} aria-label={`Mở ${row.name}`} onClick={(event) => openRow(event, row)} onKeyDown={(event) => openRow(event, row)}>
+            {index === 0 && <th className="pw-ledger-group pw-desktop-group" scope="rowgroup" rowSpan={g.records.length}><strong>{g.name}</strong></th>}
+            <td className="pw-ledger-item"><span className="pw-ledger-open">{row.name}</span><span className="pw-ledger-mobile-meta"><span className={`pw-ledger-status ${row.paymentState}`}>{row.paymentState === 'partial' ? 'Một phần' : row.paymentState === 'paid' ? 'Đã trả' : 'Chưa chi'}</span>{row.note && <span className="pw-ledger-note-mark" title={row.note}><StickyNote size={11} />Có ghi chú</span>}</span></td>
+            <td className="numeric planned"><TableMoney value={row.planned} /></td><td className="numeric person nam"><TableMoney value={row.namSpent} /></td><td className="numeric person phuong"><TableMoney value={row.phuongSpent} /></td><td className="pw-status-cell"><span className={`pw-ledger-status ${row.paymentState}`}>{row.paymentState === 'partial' ? 'Một phần' : row.paymentState === 'paid' ? 'Đã trả' : 'Chưa chi'}</span></td><td className="pw-ledger-note pw-note-cell" title={row.note || ''}>{row.note || '—'}</td>
+          </tr>)}<tr className="pw-ledger-group-summary"><td colSpan={7}><span>Tổng nhóm</span><strong>{money(groupTotals.actual)}</strong><small>Dự toán {compact(groupTotals.planned)} · Nam {compact(groupTotals.nam)} · Phương {compact(groupTotals.phuong)}</small></td></tr></> : <tr className="pw-ledger-empty-row"><th className="pw-ledger-group pw-desktop-group" scope="rowgroup"><strong>{g.name}</strong></th><td colSpan={6}><button className="pw-ledger-empty" onClick={() => onAdd(g.id)}><Plus size={12} />Thêm khoản chi</button></td></tr>}
+        </tbody>
+      })}
+      {enriched.some((group) => group.records.length) && <tfoot><tr className="pw-ledger-grand-total"><td colSpan={7}><span className="pw-ledger-total-icon"><Banknote size={18} /></span><span><small>Tổng đã chi</small><strong>{money(totals.actual)}</strong></span><span className="pw-ledger-total-detail">Dự toán <b>{money(totals.planned)}</b></span><span className="pw-ledger-total-person nam">Nam <b>{money(totals.nam)}</b></span><span className="pw-ledger-total-person phuong">Phương <b>{money(totals.phuong)}</b></span></td></tr></tfoot>}
     </table>{!visible.length && <div className="pw-empty">Không có bản ghi phù hợp.</div>}
   </div>
 }

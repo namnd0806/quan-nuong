@@ -111,6 +111,24 @@
  .pw-money-metric.spent{border-color:#2c604b;background:#102b238c}.pw-money-metric.spent small,.pw-money-metric.spent strong,.pw-money-metric.spent svg{color:#76dfa8!important}
 }
 
+/* Hybrid budget ledger: full spreadsheet on desktop, priority table on phones. */
+.pw-mobile-group-row,.pw-ledger-mobile-meta{display:none}.pw-ledger-data{cursor:pointer;outline:0}.pw-ledger-data:hover td,.pw-ledger-data:focus-visible td{background:#182d46}.pw-ledger-data:focus-visible td{box-shadow:inset 0 2px #63a8f5,inset 0 -2px #63a8f5}.pw-ledger-item{min-width:0}.pw-ledger-group-summary td{height:auto!important;padding:7px 10px!important;background:#0d1b2c!important;border-bottom:1px solid #3a536f!important;text-align:right}.pw-ledger-group-summary span{color:#819ab7;font-size:9px;text-transform:uppercase;letter-spacing:.45px}.pw-ledger-group-summary strong{margin-left:9px;color:#78e1ad;font-size:11px}.pw-ledger-group-summary small{margin-left:10px;color:#6f88a5;font-size:9px}.pw-ledger-grand-total td{padding:13px 15px!important;background:linear-gradient(120deg,#15382e,#142f3b)!important;border-top:2px solid #3a9b76!important;border-bottom:0!important}.pw-ledger-grand-total td{display:flex;align-items:center;gap:13px}.pw-ledger-total-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;border:1px solid #3b9a75;border-radius:10px;background:#163f32;color:#78e2b0}.pw-ledger-grand-total small{display:block;color:#8ccdaf;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.55px}.pw-ledger-grand-total strong{display:block;margin-top:2px;color:#93efc3;font-size:17px;line-height:1;font-variant-numeric:tabular-nums}.pw-ledger-total-detail,.pw-ledger-total-person{margin-left:auto;color:#8ca4c0;font-size:10px}.pw-ledger-total-detail b,.pw-ledger-total-person b{display:block;margin-top:3px;color:#dce9f8;font-size:11px;font-variant-numeric:tabular-nums}.pw-ledger-total-person.nam b{color:#c3b5ff}.pw-ledger-total-person.phuong b{color:#77dbea}
+@media(max-width:767px){
+ .pw-ledger-shell{position:relative;overflow:auto;max-height:72dvh;border-radius:12px;overscroll-behavior:contain;background:#0d1b2c}
+ .pw-ledger{width:100%;min-width:0;table-layout:fixed;font-size:10px}
+ .pw-ledger .pw-desktop-group-col,.pw-ledger .pw-desktop-group,.pw-ledger .pw-status-col,.pw-ledger .pw-status-cell,.pw-ledger .pw-note-col,.pw-ledger .pw-note-cell{display:none}
+ .pw-ledger thead th{position:sticky;top:0;z-index:4;height:36px;padding:8px 5px!important;background:#1b334e!important;color:#a9bdd5!important;font-size:8px!important;line-height:1.2;text-align:right!important;white-space:nowrap!important}
+ .pw-ledger thead th:nth-child(2){width:43%;text-align:left!important}.pw-ledger thead th:nth-child(3){width:19%}.pw-ledger thead th:nth-child(4),.pw-ledger thead th:nth-child(5){width:19%}
+ .pw-mobile-group-row{display:table-row}.pw-mobile-group-row th{padding:9px 10px;border-top:1px solid #3e5a78;border-bottom:1px solid #314963;background:linear-gradient(100deg,#203b59,#172c43);text-align:left}.pw-mobile-group-row span{color:#e6f0fc;font-size:11px;font-weight:750}.pw-mobile-group-row small{float:right;color:#87a5c5;font-size:9px;font-weight:600}
+ .pw-ledger-data td{height:58px;padding:7px 5px!important;background:#112137;border-right:1px solid #283e56;border-bottom:1px solid #263b53;vertical-align:middle}.pw-ledger-data:nth-child(odd) td{background:#13243a}
+ .pw-ledger .pw-ledger-item{padding-left:9px!important}.pw-ledger .pw-ledger-open{display:block;min-width:0;min-height:0;color:#edf4fd;font-size:10px;line-height:1.35;font-weight:650;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+ .pw-ledger-mobile-meta{display:flex;align-items:center;gap:5px;margin-top:5px;min-width:0}.pw-ledger-mobile-meta .pw-ledger-status{display:inline-flex!important;padding:0!important;border:0!important;background:none!important;font-size:8px!important;line-height:1!important}.pw-ledger-mobile-meta .pw-ledger-status:before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}.pw-ledger-note-mark{display:flex;align-items:center;gap:3px;min-width:0;color:#79a8da;font-size:7px;white-space:nowrap}
+ .pw-ledger .numeric{padding-right:6px!important;color:#d9e6f5;font-size:9px!important;letter-spacing:-.25px;text-align:right;white-space:nowrap}.pw-ledger .planned{color:#a9c9ee}.pw-ledger .person.nam{color:#c3b5ff}.pw-ledger .person.phuong{color:#77dbea}
+ .pw-ledger-group-summary td{display:table-cell!important;padding:7px 9px!important;text-align:left!important}.pw-ledger-group-summary span{font-size:8px}.pw-ledger-group-summary strong{font-size:10px}.pw-ledger-group-summary small{display:block;margin:3px 0 0;color:#718ba8;font-size:8px;text-transform:none;letter-spacing:0}
+ .pw-ledger-empty-row .pw-ledger-group{display:none}.pw-ledger-empty-row td{padding:11px!important;background:#102137}.pw-ledger-empty{min-height:34px;font-size:10px}
+ .pw-ledger-grand-total td{display:grid!important;grid-template-columns:34px minmax(0,1fr) auto;gap:5px 9px;padding:11px 10px!important}.pw-ledger-total-icon{grid-row:1/3;width:34px;height:34px}.pw-ledger-grand-total strong{font-size:15px}.pw-ledger-total-detail{grid-column:3;grid-row:1/3;align-self:center;margin:0;text-align:right}.pw-ledger-total-person{margin:0;font-size:8px}.pw-ledger-total-person b{display:inline;margin-left:3px;font-size:9px}.pw-ledger-total-person.nam{grid-column:2}.pw-ledger-total-person.phuong{grid-column:2}
+}
+
 /* Checklist metadata: compact, scannable chips with distinct meanings. */
 @media(max-width:767px){
  .pw-tasks .pw-mobile-meta{gap:6px;margin-top:11px;align-items:center}
@@ -253,4 +271,12 @@
  .pw-sheet-confirm{grid-template-columns:43px minmax(0,1fr);padding:14px;gap:11px}.pw-sheet-confirm-icon{width:43px;height:43px}.pw-sheet-confirm h3{font-size:14px}.pw-sheet-confirm p{font-size:11px}.pw-sheet-columns{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.pw-sheet-columns span{min-height:39px;font-size:8px}
  .pw-ledger thead th:nth-child(1){width:15%}.pw-ledger thead th:nth-child(2){width:24%}.pw-ledger thead th:nth-child(3){width:11%}.pw-ledger thead th:nth-child(4),.pw-ledger thead th:nth-child(5){width:12%}.pw-ledger thead th:nth-child(6){width:12%}.pw-ledger thead th:nth-child(7){width:14%}
  .pw-ledger thead th{padding:8px 2px;font-size:7px;line-height:1.25}.pw-ledger td{padding:6px 3px;font-size:9px}.pw-ledger .pw-ledger-group{padding:6px 4px}.pw-ledger-group strong,.pw-ledger .pw-ledger-open{font-size:9px}.pw-ledger .numeric{font-size:8px;letter-spacing:-.35px}.pw-ledger-status{font-size:8px}.pw-ledger-note{font-size:8px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+}
+
+/* Final mobile ledger sizing intentionally overrides the legacy seven-column rules above. */
+@media(max-width:767px){
+ .pw-ledger-shell{overflow:auto!important}
+ .pw-ledger{min-width:0!important;width:100%!important;table-layout:fixed!important}
+ .pw-ledger thead th:nth-child(2){width:43%!important;text-align:left!important}.pw-ledger thead th:nth-child(3){width:19%!important}.pw-ledger thead th:nth-child(4),.pw-ledger thead th:nth-child(5){width:19%!important}
+ .pw-ledger .pw-ledger-open{font-size:10px!important}.pw-ledger .numeric{font-size:9px!important}
 }
