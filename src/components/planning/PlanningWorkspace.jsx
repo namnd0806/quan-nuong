@@ -320,8 +320,8 @@ export default function PlanningWorkspace({ kind }) {
       <BudgetQuickTable rows={budgetQuickRows} view={budgetView} budgets={budgets.rows} onOpen={(id) => { setBudgetView(null); setDetailId(id) }} />
     </PlanningPanel>
 
-    <PlanningPanel open={!task && sheetConfirmOpen} title="Đồng bộ Google Sheet" busy={sheetSyncing} onClose={() => setSheetConfirmOpen(false)} footer={<><button className="pw-secondary" disabled={sheetSyncing} onClick={() => setSheetConfirmOpen(false)}>Huỷ</button><BusyButton busy={sheetSyncing} onClick={syncBudgetSheet}><CloudUpload size={17} />Đồng bộ</BusyButton></>}>
-      <p className="pw-sheet-sync-copy">Ghi dữ liệu ngân sách hiện tại sang tab <strong>PHÂN BỔ NGÂN SÁCH</strong>.</p>
+    <PlanningPanel open={!task && sheetConfirmOpen} title="Đồng bộ Sheet" variant="sync" busy={sheetSyncing} onClose={() => setSheetConfirmOpen(false)} footer={<><button className="pw-secondary" disabled={sheetSyncing} onClick={() => setSheetConfirmOpen(false)}>Huỷ</button><BusyButton busy={sheetSyncing} onClick={syncBudgetSheet}><CloudUpload size={17} />Đồng bộ</BusyButton></>}>
+      <div className="pw-sheet-alert"><span className="pw-sheet-alert-icon"><CloudUpload size={22} /></span><p>Ghi dữ liệu ngân sách hiện tại sang tab <strong>PHÂN BỔ NGÂN SÁCH</strong>.</p></div>
     </PlanningPanel>
 
     <PlanningPanel open={Boolean(draft)} title={task ? (draft?.updated_at ? 'Chi tiết công việc' : 'Thêm công việc') : (draft?.updated_at ? 'Sửa khoản ngân sách' : 'Thêm khoản ngân sách')} busy={disabled} onClose={() => setDraft(null)} wide footer={<><button className="pw-secondary" disabled={disabled} onClick={() => setDraft(null)}>Đóng</button><BusyButton busy={disabled} type="submit" form="planning-record-form">Lưu thay đổi</BusyButton></>}>
@@ -383,6 +383,9 @@ function BudgetGroupTable({ groups, matches, byItem, members, onOpen, onAdd, fil
     const payments = byItem[row.id] || []
     return { planned:sum.planned + Number(row.planned || 0), actual:sum.actual + paymentTotal(payments), nam:sum.nam + personSpent(payments, nam), phuong:sum.phuong + personSpent(payments, phuong) }
   }, { planned:0, actual:0, nam:0, phuong:0 })
+  const attributedTotal = totals.nam + totals.phuong
+  const namRatio = attributedTotal > 0 ? Math.round(totals.nam / attributedTotal * 100) : 0
+  const phuongRatio = attributedTotal > 0 ? 100 - namRatio : 0
   return <div className="pw-ledger-shell" role="region" aria-label="Bảng ngân sách theo nhóm" tabIndex={0}>
     <table className="pw-ledger">
       <thead><tr><th>Nhóm chi phí</th><th>Hạng mục</th><th className="numeric">Dự toán</th><th className="numeric">Nam đã chi</th><th className="numeric">Phương đã chi</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead>
@@ -394,7 +397,7 @@ function BudgetGroupTable({ groups, matches, byItem, members, onOpen, onAdd, fil
         const status=budgetPaymentState(row,actual)
         return <tr key={row.id}>{index === 0 && <th className="pw-ledger-group" scope="rowgroup" rowSpan={g.records.length}><strong>{g.name}</strong></th>}<td><button className="pw-ledger-open" onClick={() => onOpen(row)} aria-label={`Mở ${row.name}`}>{row.name}</button></td><td className="numeric planned"><TableMoney value={row.planned} /></td><td className="numeric person nam"><TableMoney value={namSpent} /></td><td className="numeric person phuong"><TableMoney value={phuongSpent} /></td><td><span className={`pw-ledger-status ${status}`}>{status === 'partial' ? 'Một phần' : status === 'paid' ? 'Đã trả' : 'Chưa chi'}</span></td><td className="pw-ledger-note" title={row.note || ''}>{row.note || '—'}</td></tr>
       }) : <tr><th className="pw-ledger-group" scope="rowgroup"><strong>{g.name}</strong></th><td colSpan={6}><button className="pw-ledger-empty" onClick={() => onAdd(g.id)}><Plus size={12} />Thêm khoản chi</button></td></tr>}</tbody>)}
-      {visible.some((group) => group.records.length) && <tfoot><tr className="pw-ledger-grand-total"><td colSpan={2}><span>Tổng đã chi</span><strong>{money(totals.actual)}</strong></td><td className="numeric planned"><TableMoney value={totals.planned} /></td><td className="numeric person nam"><TableMoney value={totals.nam} /></td><td className="numeric person phuong"><TableMoney value={totals.phuong} /></td><td colSpan={2}>Tổng toàn bộ dữ liệu đang hiển thị</td></tr></tfoot>}
+      {visible.some((group) => group.records.length) && <tfoot><tr className="pw-ledger-grand-total"><td colSpan={2}><span>Tổng đã chi</span><strong>{money(totals.actual)}</strong></td><td className="numeric planned"><TableMoney value={totals.planned} /></td><td className="numeric person nam"><TableMoney value={totals.nam} /></td><td className="numeric person phuong"><TableMoney value={totals.phuong} /></td><td colSpan={2}><span className="pw-spending-ratio nam">Nam <strong>{namRatio}%</strong></span><span className="pw-spending-ratio phuong">Phương <strong>{phuongRatio}%</strong></span></td></tr></tfoot>}
     </table>{!visible.length && <div className="pw-empty">Không có bản ghi phù hợp.</div>}
   </div>
 }
