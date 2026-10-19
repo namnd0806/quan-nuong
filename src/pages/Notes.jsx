@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Pencil, Trash2, X, Pin, StickyNote, Loader2 } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, X, Pin, StickyNote, Loader2, CircleAlert, ListTodo } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,18 +33,27 @@ export default function Notes() {
   const { rows: notes, loading, error, create, update, remove } = useCollection('notes', { notify: { label: 'ghi chú', type: 'update' } })
   const [query, setQuery] = useState('')
   const [tag, setTag] = useState('all')
+  const [pinnedOnly, setPinnedOnly] = useState(false)
   const [editing, setEditing] = useState(null) // note object or draft
   const [confirmDel, setConfirmDel] = useState(null)
   const [saving, setSaving] = useState(false)
 
+  const counts = useMemo(() => ({
+    all: notes.length,
+    pinned: notes.filter((n) => n.pinned).length,
+    important: notes.filter((n) => n.tag === 'important').length,
+    todo: notes.filter((n) => n.tag === 'todo').length,
+  }), [notes])
+
   const filtered = useMemo(() => {
     const list = notes.filter((n) => {
       if (tag !== 'all' && n.tag !== tag) return false
+      if (pinnedOnly && !n.pinned) return false
       if (query && !`${n.title} ${n.body || ''}`.toLowerCase().includes(query.toLowerCase())) return false
       return true
     })
-    return [...list].sort((a, b) => Number(b.pinned) - Number(a.pinned))
-  }, [notes, query, tag])
+    return [...list].sort((a, b) => Number(b.pinned) - Number(a.pinned) || new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+  }, [notes, query, tag, pinnedOnly])
 
   const save = async (draft) => {
     setSaving(true)
@@ -77,13 +86,26 @@ export default function Notes() {
         </Button>
       </div>
 
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          { key: 'all', label: 'Tất cả', value: counts.all, icon: StickyNote, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+          { key: 'pinned', label: 'Đã ghim', value: counts.pinned, icon: Pin, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+          { key: 'important', label: 'Quan trọng', value: counts.important, icon: CircleAlert, color: 'text-red-400', bg: 'bg-red-500/10' },
+          { key: 'todo', label: 'Cần làm', value: counts.todo, icon: ListTodo, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+        ].map((s) => {
+          const Icon = s.icon
+          const active = s.key === 'pinned' ? pinnedOnly : (!pinnedOnly && tag === s.key)
+          return <button key={s.key} onClick={() => { setPinnedOnly(s.key === 'pinned'); setTag(s.key === 'pinned' ? 'all' : s.key) }} className={cn('flex min-h-20 items-center gap-3 rounded-2xl border bg-white/[0.025] p-3 text-left transition-all hover:border-white/20 hover:bg-white/5 sm:p-4', active ? 'border-blue-400/50 ring-1 ring-blue-400/20' : 'border-white/10')}><span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', s.bg, s.color)}><Icon className="h-5 w-5" /></span><span><span className="block text-xl font-bold text-foreground sm:text-2xl">{s.value}</span><span className="text-xs text-gray-400">{s.label}</span></span></button>
+        })}
+      </div>
+
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1 lg:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm ghi chú..." className="rounded-xl border-white/10 bg-white/5 pl-9 focus:border-blue-500/50 focus:bg-white/10" />
         </div>
-        <Select value={tag} onValueChange={setTag}>
-          <SelectTrigger className="w-[170px] rounded-xl border-white/10 bg-white/5"><SelectValue /></SelectTrigger>
+        <Select value={tag} onValueChange={(value) => { setTag(value); setPinnedOnly(false) }}>
+          <SelectTrigger className="w-full rounded-xl border-white/10 bg-white/5 sm:w-[170px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả nhãn</SelectItem>
             {TAG_OPTIONS.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -106,24 +128,24 @@ export default function Notes() {
           </Button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((n) => {
             const t = TAGS[n.tag] || TAGS.general
             return (
-              <Card key={n.id} className={cn('group flex flex-col rounded-2xl border-white/10 p-5 transition-all hover:border-white/20 hover:shadow-lg hover:shadow-blue-500/10', n.pinned && 'ring-1 ring-blue-400/40')} style={{ background: 'rgba(255,255,255,0.02)' }}>
+              <Card key={n.id} onDoubleClick={() => setEditing(n)} className={cn('group flex min-h-48 flex-col rounded-2xl border-white/10 p-4 transition-all hover:border-white/20 hover:shadow-lg hover:shadow-blue-500/10 sm:p-5', n.pinned && 'ring-1 ring-blue-400/40')} style={{ background: 'rgba(255,255,255,0.02)' }}>
                 <div className="flex items-start justify-between gap-2">
                   <Badge variant={t.variant}>{t.label}</Badge>
-                  <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button onClick={() => togglePin(n)} className={cn('rounded p-1 hover:text-foreground', n.pinned ? 'text-blue-400' : 'text-gray-400')} title="Ghim"><Pin className="h-4 w-4" /></button>
-                    <button onClick={() => setEditing(n)} className="rounded p-1 text-gray-400 hover:text-foreground" title="Chỉnh sửa"><Pencil className="h-4 w-4" /></button>
-                    <button onClick={() => setConfirmDel(n)} className="rounded p-1 text-gray-400 hover:text-red-400" title="Xóa"><Trash2 className="h-4 w-4" /></button>
+                  <div className="flex items-center gap-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                    <button onClick={() => togglePin(n)} className={cn('flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5 hover:text-foreground', n.pinned ? 'text-blue-400' : 'text-gray-400')} title="Ghim"><Pin className="h-4 w-4" /></button>
+                    <button onClick={() => setEditing(n)} className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 hover:bg-white/5 hover:text-foreground" title="Chỉnh sửa"><Pencil className="h-4 w-4" /></button>
+                    <button onClick={() => setConfirmDel(n)} className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 hover:bg-red-500/10 hover:text-red-400" title="Xóa"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 </div>
                 <h3 className="mt-2 font-semibold text-foreground">{n.title}</h3>
-                <p className="mt-1 flex-1 whitespace-pre-wrap text-sm text-gray-400">{n.body}</p>
+                <p className="mt-2 max-h-36 flex-1 overflow-y-auto whitespace-pre-wrap pr-1 text-sm leading-6 text-gray-400">{n.body || 'Chưa có nội dung'}</p>
                 <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3 text-xs text-gray-500">
                   <span>{n.author}</span>
-                  <span>{fmtDate(n.created_at)}</span>
+                  <span>{fmtDate(n.updated_at || n.created_at)}</span>
                 </div>
               </Card>
             )
@@ -145,24 +167,24 @@ function NoteModal({ note, saving, onClose, onSave }) {
   return (
     <AnimatePresence>
       {note && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="relative flex w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-white/10 shadow-2xl"
+            className="relative flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-white/10 shadow-2xl sm:rounded-3xl"
             style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.98), rgba(10,22,40,0.98))' }}
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5">
               <h2 className="text-xl font-bold text-foreground">{draft.id ? 'Chỉnh sửa ghi chú' : 'Thêm ghi chú'}</h2>
               <Button variant="ghost" size="icon" onClick={onClose} aria-label="Đóng" className="rounded-xl hover:bg-white/10"><X className="h-5 w-5" /></Button>
             </div>
-            <div className="space-y-4 px-6 py-5">
+            <div className="space-y-4 overflow-y-auto px-4 py-5 sm:px-6">
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-400">Tiêu đề <span className="text-red-400">*</span></label>
-                <Input value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} placeholder="Nhập tiêu đề ghi chú" className="rounded-xl border-white/10 bg-white/5 focus:border-blue-500/50 focus:bg-white/10" />
+                <Input value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} placeholder="Nhập tiêu đề ghi chú" className="rounded-xl border-white/10 bg-white/5 text-base focus:border-blue-500/50 focus:bg-white/10 sm:text-sm" />
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-400">Nhãn</label>
@@ -174,13 +196,13 @@ function NoteModal({ note, saving, onClose, onSave }) {
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-400">Nội dung</label>
                 <textarea
-                  rows={4} value={draft.body} onChange={(e) => setDraft((d) => ({ ...d, body: e.target.value }))}
+                  rows={6} value={draft.body} onChange={(e) => setDraft((d) => ({ ...d, body: e.target.value }))}
                   placeholder="Nhập nội dung ghi chú..."
-                  className="flex w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-foreground ring-offset-background placeholder:text-gray-500 focus:border-blue-500/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="flex min-h-36 w-full resize-y rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-foreground ring-offset-background placeholder:text-gray-500 focus:border-blue-500/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:text-sm"
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-3 border-t border-white/10 px-6 py-4">
+            <div className="flex justify-end gap-3 border-t border-white/10 bg-slate-950/30 px-4 py-4 sm:px-6">
               <Button variant="secondary" onClick={onClose} disabled={saving} className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">Hủy</Button>
               <Button disabled={!valid || saving} onClick={() => onSave(draft)} className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30">
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}

@@ -54,6 +54,8 @@ export default function MenuCost() {
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('name')
+  const [view, setView] = useState(() => (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'grid' : 'table'))
   const [addOpen, setAddOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [reportOpen, setReportOpen] = useState(false)
@@ -103,7 +105,12 @@ export default function MenuCost() {
     }
     if (query && !(`${m.name} ${m.code || ''}`.toLowerCase().includes(query.toLowerCase()))) return false
     return true
-  }), [menu, tab, statusFilter, query])
+  }).sort((a, b) => {
+    if (sortBy === 'foodcost') return fcOf(b) - fcOf(a)
+    if (sortBy === 'profit') return profitOf(b) - profitOf(a)
+    if (sortBy === 'price') return (b.sell || 0) - (a.sell || 0)
+    return (a.name || '').localeCompare(b.name || '', 'vi')
+  }), [menu, tab, statusFilter, query, sortBy])
 
   const reportData = useMemo(() => {
     const totalCost = menu.reduce((s, m) => s + totalCostOf(m), 0)
@@ -166,19 +173,19 @@ export default function MenuCost() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {STAT_CARDS.map((s) => {
           const Icon = s.icon
           const t = cardTone[s.tone]
           return (
-            <div key={s.label} className="relative overflow-hidden rounded-2xl border border-white/10 p-5 transition-all hover:border-white/20 hover:shadow-lg hover:shadow-blue-500/10" style={{ background: 'rgba(255,255,255,0.02)' }}>
-              <div className="flex items-center gap-4">
-                <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg', t.tile)}>
-                  <Icon className="h-6 w-6" />
+            <div key={s.label} className="relative overflow-hidden rounded-2xl border border-white/10 p-3.5 transition-all hover:border-white/20 hover:shadow-lg hover:shadow-blue-500/10 sm:p-5" style={{ background: 'rgba(255,255,255,0.02)' }}>
+              <div className="flex items-center gap-2.5 sm:gap-4">
+                <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg sm:h-14 sm:w-14', t.tile)}>
+                  <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div className="min-w-0">
                   <div className={cn('text-xs font-semibold uppercase tracking-wider', t.text)}>{s.label}</div>
-                  <div className="mt-1 text-3xl font-bold text-foreground">{s.value}</div>
+                  <div className="mt-1 text-xl font-bold text-foreground sm:text-3xl">{s.value}</div>
                 </div>
               </div>
               <div className={cn('mt-3 h-0.5 w-10 rounded-full', t.bar)} />
@@ -213,12 +220,21 @@ export default function MenuCost() {
               <SelectItem value="over">Vượt mục tiêu</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[160px] flex-1 rounded-xl border-white/10 bg-white/5 sm:flex-none"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">Tên A–Z</SelectItem>
+              <SelectItem value="foodcost">Food cost cao</SelectItem>
+              <SelectItem value="profit">Lợi nhuận cao</SelectItem>
+              <SelectItem value="price">Giá bán cao</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="secondary" onClick={() => setReportOpen(true)} className="gap-2 rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
             <BarChart3 className="h-4 w-4" /> Báo cáo Food Cost
           </Button>
-          <div className="flex overflow-hidden rounded-xl border border-white/10">
-            <button className="px-2.5 py-2 text-gray-400 transition-colors hover:bg-white/5"><List className="h-4 w-4" /></button>
-            <button className="bg-blue-600 px-2.5 py-2 text-white"><LayoutGrid className="h-4 w-4" /></button>
+          <div className="flex overflow-hidden rounded-xl border border-white/10" aria-label="Kiểu hiển thị">
+            <button aria-pressed={view === 'table'} onClick={() => setView('table')} className={cn('px-3 py-2.5 transition-colors', view === 'table' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-white/5')} title="Dạng bảng"><List className="h-4 w-4" /></button>
+            <button aria-pressed={view === 'grid'} onClick={() => setView('grid')} className={cn('px-3 py-2.5 transition-colors', view === 'grid' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-white/5')} title="Dạng thẻ"><LayoutGrid className="h-4 w-4" /></button>
           </div>
         </div>
       </div>
@@ -243,7 +259,7 @@ export default function MenuCost() {
       </div>
 
       {/* Table */}
-      <Card className="overflow-hidden rounded-2xl border-white/10" style={{ background: 'rgba(255,255,255,0.02)' }}>
+      {view === 'table' && <Card className="overflow-hidden rounded-2xl border-white/10" style={{ background: 'rgba(255,255,255,0.02)' }}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[920px] text-sm">
             <thead>
@@ -318,7 +334,49 @@ export default function MenuCost() {
             </tbody>
           </table>
         </div>
-      </Card>
+      </Card>}
+
+      {view === 'grid' && (
+        loading ? (
+          <Card className="flex min-h-48 items-center justify-center rounded-2xl border-white/10 bg-white/5"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></Card>
+        ) : error ? (
+          <Card className="rounded-2xl border-red-500/30 bg-red-500/10 p-6 text-sm text-red-400">Không tải được dữ liệu: {error.message}</Card>
+        ) : filtered.length === 0 ? (
+          <Card className="rounded-2xl border-white/10 bg-white/5 p-10 text-center text-sm text-muted-foreground">Không tìm thấy món nào.</Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((m) => {
+              const fc = fcOf(m)
+              const profit = profitOf(m)
+              const status = fc > m.target ? 'over' : 'ok'
+              const cat = CAT[m.cat] || { icon: '🍽️', color: 'hsl(215 20% 50%)' }
+              return (
+                <Card key={m.id} className="overflow-hidden rounded-2xl border-white/10 p-4 transition-all hover:border-blue-400/30 hover:bg-white/[0.04]" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  <div className="flex items-start gap-3">
+                    <ImageFrame src={m.img} emoji="🍽️" size="h-14 w-14" rounded="rounded-xl" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div><h3 className="truncate font-semibold text-foreground">{m.name}</h3><p className="text-xs text-muted-foreground">{m.code || 'Chưa có mã'}</p></div>
+                        <Badge variant={STATUS[status].variant}>{STATUS[status].label}</Badge>
+                      </div>
+                      <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-gray-400"><span style={{ color: cat.color }}>{cat.icon}</span>{m.cat || 'Chưa phân loại'}</div>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-xl bg-white/5 p-2"><div className="text-[10px] uppercase text-gray-500">Giá bán</div><div className="mt-1 text-sm font-bold text-foreground">{formatVND(m.sell)}</div></div>
+                    <div className="rounded-xl bg-white/5 p-2"><div className="text-[10px] uppercase text-gray-500">Food cost</div><div className={cn('mt-1 text-sm font-bold', foodCostText(fc))}>{fc.toFixed(1)}%</div></div>
+                    <div className="rounded-xl bg-white/5 p-2"><div className="text-[10px] uppercase text-gray-500">Lợi nhuận</div><div className={cn('mt-1 text-sm font-bold', profit >= 0 ? 'text-success' : 'text-destructive')}>{formatVND(profit)}</div></div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3 text-xs text-gray-400">
+                    <span>Tổng vốn: {formatVND(totalCostOf(m))}</span>
+                    <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { setEditing(m); setAddOpen(true) }} aria-label={`Sửa ${m.name}`}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-400" onClick={() => setConfirmDel(m)} aria-label={`Xóa ${m.name}`}><Trash2 className="h-4 w-4" /></Button></div>
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        )
+      )}
 
       {!loading && !error && <div className="text-sm text-muted-foreground">Hiển thị {filtered.length} / {menu.length} món</div>}
 

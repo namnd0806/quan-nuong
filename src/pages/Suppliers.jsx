@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import {
   Plus, Search, Pencil, Eye, MoreVertical, Store, CheckCircle2, Clock, PauseCircle,
-  List, LayoutGrid, Loader2,
+  List, LayoutGrid, Loader2, Phone, Package, MapPin,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -47,6 +47,7 @@ export default function Suppliers() {
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
   const [cat, setCat] = useState('all')
+  const [view, setView] = useState(() => (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'grid' : 'table'))
   const [addOpen, setAddOpen] = useState(false)
   const [detail, setDetail] = useState(null)
   const [editItem, setEditItem] = useState(null)
@@ -84,7 +85,7 @@ export default function Suppliers() {
   const filtered = useMemo(() => withProducts.filter((s) => {
     if (tab !== 'all' && s.status !== tab) return false
     if (cat !== 'all' && s.tag !== cat) return false
-    if (query && !s.name.toLowerCase().includes(query.toLowerCase())) return false
+    if (query && !`${s.name} ${s.code || ''} ${s.note || ''} ${s.productList.join(' ')}`.toLowerCase().includes(query.toLowerCase())) return false
     return true
   }), [withProducts, tab, cat, query])
 
@@ -130,7 +131,7 @@ export default function Suppliers() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {STAT_CARDS.map((s) => {
           const Icon = s.icon
           const t = cardTone[s.tone]
@@ -140,18 +141,18 @@ export default function Suppliers() {
               key={s.key}
               onClick={() => setTab(s.key)}
               className={cn(
-                'relative overflow-hidden rounded-2xl border border-white/10 p-5 text-left transition-all hover:-translate-y-0.5 hover:border-white/20 hover:shadow-lg hover:shadow-blue-500/10',
+                'relative overflow-hidden rounded-2xl border border-white/10 p-3.5 text-left transition-all hover:-translate-y-0.5 hover:border-white/20 hover:shadow-lg hover:shadow-blue-500/10 sm:p-5',
                 isActive && 'ring-2 ring-blue-400/40'
               )}
               style={{ background: 'rgba(255,255,255,0.02)' }}
             >
-              <div className="flex items-center gap-4">
-                <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg', t.tile)}>
-                  <Icon className="h-6 w-6" />
+              <div className="flex items-center gap-2.5 sm:gap-4">
+                <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg sm:h-14 sm:w-14', t.tile)}>
+                  <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div className="min-w-0">
                   <div className={cn('text-xs font-semibold uppercase tracking-wider', t.text)}>{s.label}</div>
-                  <div className="mt-1 text-3xl font-bold text-foreground">{s.value}</div>
+                  <div className="mt-1 text-xl font-bold text-foreground sm:text-3xl">{s.value}</div>
                   <div className="text-xs text-gray-400">{s.sub}</div>
                 </div>
               </div>
@@ -183,15 +184,15 @@ export default function Suppliers() {
               <SelectItem value="inactive">Ngừng hợp tác</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex overflow-hidden rounded-xl border border-white/10">
-            <button className="bg-blue-600 px-2.5 py-2 text-white"><List className="h-4 w-4" /></button>
-            <button className="px-2.5 py-2 text-gray-400 transition-colors hover:bg-white/5"><LayoutGrid className="h-4 w-4" /></button>
+          <div className="flex overflow-hidden rounded-xl border border-white/10" aria-label="Kiểu hiển thị">
+            <button aria-pressed={view === 'table'} onClick={() => setView('table')} className={cn('px-3 py-2.5 transition-colors', view === 'table' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-white/5')} title="Dạng bảng"><List className="h-4 w-4" /></button>
+            <button aria-pressed={view === 'grid'} onClick={() => setView('grid')} className={cn('px-3 py-2.5 transition-colors', view === 'grid' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-white/5')} title="Dạng thẻ"><LayoutGrid className="h-4 w-4" /></button>
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <Card className="overflow-hidden rounded-2xl border-white/10" style={{ background: 'rgba(255,255,255,0.02)' }}>
+      {view === 'table' && <Card className="overflow-hidden rounded-2xl border-white/10" style={{ background: 'rgba(255,255,255,0.02)' }}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] text-sm">
             <thead>
@@ -267,7 +268,39 @@ export default function Suppliers() {
             </tbody>
           </table>
         </div>
-      </Card>
+      </Card>}
+
+      {view === 'grid' && (
+        loading ? (
+          <Card className="flex min-h-48 items-center justify-center rounded-2xl border-white/10 bg-white/5"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></Card>
+        ) : error ? (
+          <Card className="rounded-2xl border-red-500/30 bg-red-500/10 p-6 text-sm text-red-400">Không tải được dữ liệu: {error.message}</Card>
+        ) : filtered.length === 0 ? (
+          <Card className="rounded-2xl border-white/10 bg-white/5 p-10 text-center text-sm text-muted-foreground">Không tìm thấy nhà cung cấp nào.</Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((s) => (
+              <Card key={s.id} className="overflow-hidden rounded-2xl border-white/10 p-4 transition-all hover:border-blue-400/30 hover:bg-white/[0.04]" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                <div className="flex items-start gap-3">
+                  {s.logo_url ? <ImageFrame src={s.logo_url} size="h-12 w-12" rounded="rounded-xl" /> : <Avatar className="h-12 w-12 rounded-xl"><AvatarFallback className="rounded-xl">{s.name.charAt(0)}</AvatarFallback></Avatar>}
+                  <div className="min-w-0 flex-1"><h3 className="truncate font-semibold text-foreground">{s.name}</h3><div className="mt-1"><BadgeSelect value={s.status} options={STATUS_OPTIONS} onChange={(v) => update(s.id, { status: v }).catch((e) => toast.error(e.message))} /></div></div>
+                  <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={() => setDetail(s)}>Xem chi tiết</DropdownMenuItem><DropdownMenuItem onClick={() => setEditItem(s)}>Chỉnh sửa</DropdownMenuItem><DropdownMenuItem onClick={() => setConfirmDel(s)} className="text-destructive">Xóa</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-xl bg-white/5 p-3"><div className="flex items-center gap-1.5 text-gray-500"><Package className="h-3.5 w-3.5" /> Sản phẩm</div><div className="mt-1 font-semibold text-foreground">{s.products} mặt hàng</div></div>
+                  <div className="rounded-xl bg-white/5 p-3"><div className="text-gray-500">Danh mục</div><div className="mt-1 truncate font-semibold" style={{ color: s.tagColor }}>{s.tag || 'Chưa phân loại'}</div></div>
+                </div>
+                {s.productList.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">{s.productList.slice(0, 3).map((p) => <span key={p} className="max-w-full truncate rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-gray-300">{p}</span>)}{s.productList.length > 3 && <span className="rounded-lg bg-blue-500/10 px-2 py-1 text-[11px] text-blue-300">+{s.productList.length - 3}</span>}</div>}
+                <div className="mt-4 space-y-2 border-t border-white/10 pt-3 text-xs text-gray-400">
+                  {s.code && <a href={`tel:${s.code}`} className="flex min-h-9 items-center gap-2 rounded-lg px-2 transition-colors hover:bg-white/5 hover:text-blue-300"><Phone className="h-4 w-4 text-blue-400" /><span className="truncate">{s.code}</span><span className="ml-auto text-blue-400">Gọi</span></a>}
+                  {s.address && <div className="flex items-center gap-2 px-2"><MapPin className="h-4 w-4 shrink-0 text-purple-400" /><span className="truncate">{s.address}</span></div>}
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2"><Button variant="secondary" className="rounded-xl border-white/10 bg-white/5" onClick={() => setDetail(s)}><Eye className="mr-2 h-4 w-4" /> Chi tiết</Button><Button variant="secondary" className="rounded-xl border-white/10 bg-white/5" onClick={() => setEditItem(s)}><Pencil className="mr-2 h-4 w-4" /> Sửa</Button></div>
+              </Card>
+            ))}
+          </div>
+        )
+      )}
 
       {!loading && !error && (
         <div className="text-sm text-muted-foreground">Hiển thị {filtered.length} / {counts.all} nhà cung cấp</div>

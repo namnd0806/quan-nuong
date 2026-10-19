@@ -9,6 +9,7 @@ import {
   TrendingUp, Wallet, CreditCard, PiggyBank, AlertTriangle,
   Loader2, CheckCircle2, ListTodo, ArrowRight, Clock,
   Circle, Wrench, UtensilsCrossed, Snowflake, Target,
+  ChefHat, Truck, StickyNote,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCollection } from '@/hooks/useCollection'
@@ -89,6 +90,7 @@ export default function Dashboard() {
       iconBg: 'rgba(59, 130, 246, 0.15)',
       iconBorder: 'rgba(59, 130, 246, 0.3)',
       textColor: 'text-blue-400',
+      to: '/checklist',
     },
     {
       title: 'NGÂN SÁCH',
@@ -100,6 +102,7 @@ export default function Dashboard() {
       iconBg: 'rgba(168, 85, 247, 0.15)',
       iconBorder: 'rgba(168, 85, 247, 0.3)',
       textColor: 'text-purple-400',
+      to: '/budget',
     },
     {
       title: 'ĐÃ CHI',
@@ -111,6 +114,7 @@ export default function Dashboard() {
       iconBg: 'rgba(251, 146, 60, 0.15)',
       iconBorder: 'rgba(251, 146, 60, 0.3)',
       textColor: 'text-orange-400',
+      to: '/budget',
     },
     {
       title: 'CÒN LẠI',
@@ -122,6 +126,7 @@ export default function Dashboard() {
       iconBg: 'rgba(52, 211, 153, 0.15)',
       iconBorder: 'rgba(52, 211, 153, 0.3)',
       textColor: 'text-emerald-400',
+      to: '/budget',
     },
   ]
 
@@ -169,10 +174,10 @@ export default function Dashboard() {
   })), [setupProgress, progressTotal])
 
   const urgentTasks = [
-    { title: 'Việc cần xử lý', count: taskStat.overdue, subtitle: 'Quá hạn', icon: AlertTriangle, bg: 'rgba(248, 113, 113, 0.1)', border: 'rgba(248, 113, 113, 0.3)', text: 'text-red-400' },
-    { title: 'Đang thực hiện', count: taskStat.doing, subtitle: 'Trong tiến độ', icon: Loader2, bg: 'rgba(251, 146, 60, 0.1)', border: 'rgba(251, 146, 60, 0.3)', text: 'text-orange-400' },
-    { title: 'Hoàn thành', count: taskStat.done, subtitle: 'Công việc', icon: CheckCircle2, bg: 'rgba(52, 211, 153, 0.1)', border: 'rgba(52, 211, 153, 0.3)', text: 'text-emerald-400' },
-    { title: 'Chưa làm', count: taskStat.todo, subtitle: 'Công việc', icon: ListTodo, bg: 'rgba(168, 85, 247, 0.1)', border: 'rgba(168, 85, 247, 0.3)', text: 'text-purple-400' },
+    { title: 'Việc cần xử lý', count: taskStat.overdue, subtitle: 'Quá hạn', icon: AlertTriangle, bg: 'rgba(248, 113, 113, 0.1)', border: 'rgba(248, 113, 113, 0.3)', text: 'text-red-400', to: '/checklist' },
+    { title: 'Đang thực hiện', count: taskStat.doing, subtitle: 'Trong tiến độ', icon: Loader2, bg: 'rgba(251, 146, 60, 0.1)', border: 'rgba(251, 146, 60, 0.3)', text: 'text-orange-400', to: '/checklist' },
+    { title: 'Hoàn thành', count: taskStat.done, subtitle: 'Công việc', icon: CheckCircle2, bg: 'rgba(52, 211, 153, 0.1)', border: 'rgba(52, 211, 153, 0.3)', text: 'text-emerald-400', to: '/checklist' },
+    { title: 'Chưa làm', count: taskStat.todo, subtitle: 'Công việc', icon: ListTodo, bg: 'rgba(168, 85, 247, 0.1)', border: 'rgba(168, 85, 247, 0.3)', text: 'text-purple-400', to: '/checklist' },
   ]
 
   const todoItems = useMemo(() => tasks
@@ -190,8 +195,17 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <div className="grid grid-cols-4 gap-2 rounded-2xl border border-white/10 bg-white/[0.025] p-2 sm:flex sm:w-fit sm:gap-2">
+        {[
+          { to: '/checklist', label: 'Công việc', icon: ListTodo, color: 'text-blue-400' },
+          { to: '/menu-cost', label: 'Cost', icon: ChefHat, color: 'text-orange-400' },
+          { to: '/suppliers', label: 'Nhà cung cấp', icon: Truck, color: 'text-emerald-400' },
+          { to: '/notes', label: 'Ghi chú', icon: StickyNote, color: 'text-purple-400' },
+        ].map((action) => { const Icon = action.icon; return <Link key={action.to} to={action.to} className="flex min-h-14 min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-center text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 sm:min-w-32 sm:px-4"><Icon className={cn('h-5 w-5 shrink-0', action.color)} /><span className="hidden sm:inline">{action.label}</span></Link> })}
+      </div>
+
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {statsCards.map((stat, i) => {
           const Icon = stat.icon
           return (
@@ -201,12 +215,13 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.4, delay: i * 0.1 }}
             >
-              <Card className="group relative overflow-hidden rounded-2xl border border-white/10 transition-all hover:border-white/20 hover:shadow-2xl" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
+              <Link to={stat.to} className="block h-full">
+              <Card className="group relative h-full overflow-hidden rounded-2xl border border-white/10 transition-all hover:border-white/20 hover:shadow-2xl" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
                 <div className={cn('pointer-events-none absolute inset-0 bg-gradient-to-br opacity-40', stat.gradient)} />
-                <CardContent className="relative p-5">
+                <CardContent className="relative p-3.5 sm:p-5">
                   {/* Icon at top - small */}
                   <div
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl shadow-lg"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl shadow-lg sm:h-11 sm:w-11"
                     style={{ background: stat.iconBg, border: `1px solid ${stat.iconBorder}` }}
                   >
                     <Icon className={cn('h-5 w-5', stat.textColor)} />
@@ -215,7 +230,7 @@ export default function Dashboard() {
                   {/* Content */}
                   <div className="mt-3.5">
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{stat.title}</div>
-                    <div className="mt-1.5 text-[28px] font-bold leading-none text-foreground">{stat.value}</div>
+                    <div className="mt-1.5 break-words text-xl font-bold leading-none text-foreground sm:text-[28px]">{stat.value}</div>
                     <div className="mt-1.5 text-xs text-gray-400">{stat.sub}</div>
                   </div>
 
@@ -228,7 +243,7 @@ export default function Dashboard() {
                     </div>
                   )}
                 </CardContent>
-              </Card>
+              </Card></Link>
             </motion.div>
           )
         })}
@@ -237,7 +252,7 @@ export default function Dashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card className="rounded-2xl border border-white/10" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader className="flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-300">XU HƯỚNG NGÂN SÁCH THEO HẠNG MỤC</CardTitle>
             <div className="flex shrink-0 items-center gap-3 text-xs">
               <span className="flex items-center gap-1.5">
@@ -287,7 +302,7 @@ export default function Dashboard() {
             {progressTotal === 0 ? (
               <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">Chưa có công việc</div>
             ) : (
-              <div className="flex items-center gap-6">
+              <div className="flex flex-col items-center gap-5 min-[420px]:flex-row sm:gap-6">
                 <div className="relative flex-shrink-0">
                   <ResponsiveContainer width={160} height={160}>
                     <RadialBarChart data={radialData} innerRadius="55%" outerRadius="100%" startAngle={90} endAngle={-270} barSize={12}>
@@ -329,7 +344,7 @@ export default function Dashboard() {
       </div>
 
       {/* Urgent Pills */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {urgentTasks.map((task, i) => {
           const Icon = task.icon
           return (
@@ -339,10 +354,11 @@ export default function Dashboard() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, delay: i * 0.05 }}
             >
-              <Card className="rounded-2xl border transition-all hover:scale-105" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.5), rgba(10,22,40,0.7))', borderColor: task.border }}>
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl" style={{ background: task.bg, border: `1.5px solid ${task.border}` }}>
+              <Link to={task.to} className="block h-full">
+              <Card className="h-full rounded-2xl border transition-all hover:-translate-y-0.5" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.5), rgba(10,22,40,0.7))', borderColor: task.border }}>
+                <CardContent className="p-3.5 sm:p-5">
+                  <div className="flex items-center gap-2.5 sm:gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12" style={{ background: task.bg, border: `1.5px solid ${task.border}` }}>
                       <Icon className={cn('h-6 w-6', task.text)} />
                     </div>
                     <div className="flex-1">
@@ -352,7 +368,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card></Link>
             </motion.div>
           )
         })}
@@ -383,7 +399,7 @@ export default function Dashboard() {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: idx * 0.05 }}
-                      className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/5 p-3 transition-all hover:border-white/10 hover:bg-white/10"
+                      className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-xl border border-white/5 bg-white/5 p-3 transition-all hover:border-white/10 hover:bg-white/10 sm:flex sm:gap-3"
                     >
                       <span className={cn('h-2 w-2 shrink-0 rounded-full', statusColor)} />
                       <span className="flex-1 text-sm font-medium text-foreground">{item.title}</span>
@@ -391,7 +407,7 @@ export default function Dashboard() {
                         Hạn: {fmtDay(item.deadline)}
                       </span>
                       {item.status !== 'todo' && (
-                        <span className={cn('shrink-0 rounded-lg px-2 py-1 text-[10px] font-semibold', item.status === 'overdue' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400')}>
+                        <span className={cn('col-start-2 w-fit shrink-0 rounded-lg px-2 py-1 text-[10px] font-semibold sm:col-auto', item.status === 'overdue' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400')}>
                           {statusLabel}
                         </span>
                       )}
