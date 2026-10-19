@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { LayoutList, Table2, Banknote, Plus, Search, ChevronDown, ChevronUp, ChevronRight, Check, Settings2, RefreshCw, Pencil, Trash2, Wallet, Calendar, Loader2, GripVertical, Link as LinkIcon } from 'lucide-react'
+import { LayoutList, Table2, Banknote, Plus, Search, ChevronDown, ChevronUp, ChevronRight, Check, Settings2, RefreshCw, Pencil, Trash2, Wallet, Calendar, Loader2, GripVertical, Link as LinkIcon, Sheet, CloudUpload, ShieldCheck } from 'lucide-react'
 import { useCollection } from '@/hooks/useCollection'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/toast'
@@ -44,6 +44,9 @@ export default function PlanningWorkspace({ kind }) {
   const [draggingGroup, setDraggingGroup] = useState(null)
   const [busy, setBusy] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [sheetSyncing, setSheetSyncing] = useState(false)
+  const [sheetConfirmOpen, setSheetConfirmOpen] = useState(false)
+  const [sheetSyncResult, setSheetSyncResult] = useState(null)
   const syncLock = useRef(false)
   const groupOrderRef = useRef([])
   const draggedGroupRef = useRef(null)
@@ -112,6 +115,23 @@ export default function PlanningWorkspace({ kind }) {
     } finally {
       syncLock.current = false
       setSyncing(false)
+    }
+  }
+  const syncBudgetSheet = async () => {
+    if (sheetSyncing) return
+    setSheetSyncing(true)
+    setSheetSyncResult(null)
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-budget-sheet', { body: {} })
+      if (error) throw error
+      if (!data?.ok) throw new Error(data?.error || 'Google Sheet chưa nhận được dữ liệu.')
+      setSheetSyncResult(data)
+      setSheetConfirmOpen(false)
+      toast.success(`Đã đồng bộ ${data.rows || 0} khoản ngân sách sang Google Sheet.`)
+    } catch (error) {
+      toast.error(error.message || 'Không đồng bộ được Google Sheet. Hãy thử lại.')
+    } finally {
+      setSheetSyncing(false)
     }
   }
 
@@ -265,9 +285,10 @@ export default function PlanningWorkspace({ kind }) {
   return <div className={`pw ${task ? 'pw-tasks' : 'pw-budget'}`}>
     <header className="pw-titlebar pw-compact-header"><h1>{task ? 'Công việc' : 'Ngân sách'}</h1><button className="pw-primary" aria-label={task ? 'Thêm công việc' : 'Thêm khoản ngân sách'} onClick={() => openNew()}><Plus size={19} /><span className="pw-add-label">Thêm<span className="pw-desktop-label"> {task ? 'công việc' : 'ngân sách'}</span></span></button></header>
     {task ? <div className="pw-stats"><Stat label="Cần làm" value={stats.todo} onClick={() => setQuickView('todo')} /><Stat label="Đang làm" value={stats.doing} tone="amber" onClick={() => setQuickView('doing')} /><Stat label="Quá hạn" value={stats.overdue} tone="red" onClick={() => setQuickView('overdue')} /></div> : <><div className="pw-stats budget" style={{ '--people-count': members.rows.length }}><Stat label="Tổng dự toán" value={money(summary.planned)} tone="blue" onClick={() => setBudgetView({ type:'planned', label:'Tổng dự toán' })} /><Stat label="Tổng thực chi" value={money(summary.actual)} tone="teal" onClick={() => setBudgetView({ type:'actual', label:'Tổng thực chi' })} />{summary.people.map((p, index) => <Stat key={p.id} label={`${personName(p.name)} đã chi`} value={money(p.spent)} tone={`person person-${index % 2}`} onClick={() => setBudgetView({ type:'person', memberId:p.id, label:`${personName(p.name)} đã chi` })} />)}</div>{summary.unassigned !== 0 && <button className={`pw-unassigned ${state === 'unassigned' ? 'active' : ''}`} aria-pressed={state === 'unassigned'} onClick={() => { setSearch(''); setState(state === 'unassigned' ? 'all' : 'unassigned'); setExpanded({}) }}><span>Chưa rõ người trả <strong>{money(summary.unassigned)}</strong></span><span>{state === 'unassigned' ? 'Bỏ lọc' : 'Xem khoản chi'} <ChevronDown size={14} /></span></button>}</>}
-    <div className="pw-toolbar"><div className="pw-search"><Search size={18} /><input aria-label="Tìm kiếm" placeholder={task ? 'Tìm công việc…' : 'Tìm khoản chi…'} value={search} onChange={(e) => setSearch(e.target.value)} /></div><div className="pw-filters">{task ? <>{[['all','Tất cả'],['mine','Của tôi'],['both','Cả hai']].map(([key,label]) => <button className={`pw-chip ${scope === key ? 'active' : ''}`} aria-pressed={scope === key} key={key} onClick={() => setScope(key)}>{label}</button>)}<select className="pw-filter-select" aria-label="Lọc trạng thái" value={state} onChange={(e) => setState(e.target.value)}><option value="all">Mọi trạng thái</option>{Object.entries(taskStates).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></> : <label className="pw-budget-status-filter"><span>Trạng thái</span><select className="pw-filter-select" aria-label="Lọc trạng thái thanh toán" value={state} onChange={(e) => setState(e.target.value)}><option value="all">Mọi trạng thái</option><option value="pending">Chưa chi</option><option value="partial">Đã cọc / Một phần</option><option value="paid">Đã thanh toán</option><option value="unassigned">Chưa rõ người trả</option></select></label>}</div><div className="pw-tool-actions">{!task && <div className="pw-view-switch" role="group" aria-label="Kiểu hiển thị ngân sách"><button type="button" aria-label="Dạng nhóm" aria-pressed={budgetLayout === 'groups'} onClick={() => setBudgetLayout('groups')}><LayoutList size={16} /><span>Nhóm</span></button><button type="button" aria-label="Dạng bảng" aria-pressed={budgetLayout === 'table'} onClick={() => setBudgetLayout('table')}><Table2 size={16} /><span>Bảng</span></button></div>}<button className="pw-secondary pw-manage-groups" aria-label="Quản lý nhóm" title="Quản lý nhóm" onClick={openGroupManager}><Settings2 size={17} /><span>Nhóm</span></button><button className="pw-reload" onClick={syncNow} disabled={busy || syncing} aria-busy={syncing} aria-label={syncing ? "Đang đồng bộ dữ liệu" : "Tải lại dữ liệu"} title={syncing ? "Đang đồng bộ…" : "Tải lại dữ liệu"}><RefreshCw size={17} className={syncing ? "animate-spin" : undefined} /></button></div></div>
+    <div className="pw-toolbar"><div className="pw-search"><Search size={18} /><input aria-label="Tìm kiếm" placeholder={task ? 'Tìm công việc…' : 'Tìm khoản chi…'} value={search} onChange={(e) => setSearch(e.target.value)} /></div><div className="pw-filters">{task ? <>{[['all','Tất cả'],['mine','Của tôi'],['both','Cả hai']].map(([key,label]) => <button className={`pw-chip ${scope === key ? 'active' : ''}`} aria-pressed={scope === key} key={key} onClick={() => setScope(key)}>{label}</button>)}<select className="pw-filter-select" aria-label="Lọc trạng thái" value={state} onChange={(e) => setState(e.target.value)}><option value="all">Mọi trạng thái</option>{Object.entries(taskStates).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></> : <label className="pw-budget-status-filter"><span>Trạng thái</span><select className="pw-filter-select" aria-label="Lọc trạng thái thanh toán" value={state} onChange={(e) => setState(e.target.value)}><option value="all">Mọi trạng thái</option><option value="pending">Chưa chi</option><option value="partial">Đã cọc / Một phần</option><option value="paid">Đã thanh toán</option><option value="unassigned">Chưa rõ người trả</option></select></label>}</div><div className="pw-tool-actions">{!task && <div className="pw-view-switch" role="group" aria-label="Kiểu hiển thị ngân sách"><button type="button" aria-label="Dạng nhóm" aria-pressed={budgetLayout === 'groups'} onClick={() => setBudgetLayout('groups')}><LayoutList size={16} /><span>Nhóm</span></button><button type="button" aria-label="Dạng bảng" aria-pressed={budgetLayout === 'table'} onClick={() => setBudgetLayout('table')}><Table2 size={16} /><span>Bảng</span></button></div>}<button className="pw-secondary pw-manage-groups" aria-label="Quản lý nhóm" title="Quản lý nhóm" onClick={openGroupManager}><Settings2 size={17} /><span>Nhóm</span></button>{!task && <button className="pw-sheet-sync" type="button" disabled={sheetSyncing} onClick={() => setSheetConfirmOpen(true)} aria-label="Đồng bộ ngân sách sang Google Sheet" title="Ghi đè tab PHÂN BỔ NGÂN SÁCH bằng dữ liệu hiện tại"><CloudUpload size={17} /><span className="pw-sheet-sync-full">Đồng bộ Sheet</span><span className="pw-sheet-sync-short">Sheet</span></button>}<button className="pw-reload" onClick={syncNow} disabled={busy || syncing} aria-busy={syncing} aria-label={syncing ? "Đang đồng bộ dữ liệu" : "Tải lại dữ liệu"} title={syncing ? "Đang đồng bộ…" : "Tải lại dữ liệu"}><RefreshCw size={17} className={syncing ? "animate-spin" : undefined} /></button></div></div>
     {error && <div role="alert" className="pw-error">Không tải được dữ liệu: {error.message} <button onClick={syncNow} disabled={syncing}>Thử lại</button></div>}
-    {loading ? <div className="pw-loading"><Loader2 className="animate-spin" size={21} />Đang đồng bộ…</div> : !task && budgetLayout === 'table' ? <BudgetGroupTable groups={groups} matches={matches} byItem={byItem} onOpen={openRecord} onAdd={openNew} filtered={Boolean(search || state !== 'all')} /> : <div className="pw-groups">{groups.map((g) => {
+    {sheetSyncResult && !task && <div className="pw-sheet-sync-result"><ShieldCheck size={16} /><span>Google Sheet đã cập nhật {sheetSyncResult.rows} dòng lúc {sheetSyncResult.syncedAt ? new Date(sheetSyncResult.syncedAt).toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' }) : 'vừa xong'}.</span></div>}
+    {loading ? <div className="pw-loading"><Loader2 className="animate-spin" size={21} />Đang đồng bộ…</div> : !task && budgetLayout === 'table' ? <BudgetGroupTable groups={groups} matches={matches} byItem={byItem} members={members.rows} onOpen={openRecord} onAdd={openNew} filtered={Boolean(search || state !== 'all')} /> : <div className="pw-groups">{groups.map((g) => {
       const rows = g.records.filter(matches)
       if (!rows.length && (search || state !== 'all' || scope !== 'all')) return null
       const open = expanded[g.id] ?? Boolean(search || state !== 'all' || scope !== 'all')
@@ -290,6 +311,10 @@ export default function PlanningWorkspace({ kind }) {
 
     <PlanningPanel open={!task && Boolean(budgetView)} title={`${budgetView?.label || 'Ngân sách'} · ${budgetQuickRows.length}`} onClose={() => setBudgetView(null)} variant="quick" wide>
       <BudgetQuickTable rows={budgetQuickRows} view={budgetView} budgets={budgets.rows} onOpen={(id) => { setBudgetView(null); setDetailId(id) }} />
+    </PlanningPanel>
+
+    <PlanningPanel open={!task && sheetConfirmOpen} title="Đồng bộ Google Sheet" busy={sheetSyncing} onClose={() => setSheetConfirmOpen(false)} footer={<><button className="pw-secondary" disabled={sheetSyncing} onClick={() => setSheetConfirmOpen(false)}>Quay lại</button><BusyButton busy={sheetSyncing} onClick={syncBudgetSheet}><CloudUpload size={17} />Đồng bộ ngay</BusyButton></>}>
+      <div className="pw-sheet-confirm"><span className="pw-sheet-confirm-icon"><Sheet size={26} /></span><div><h3>Ghi đè bảng ngân sách?</h3><p>Dữ liệu hiện tại trong tab <strong>PHÂN BỔ NGÂN SÁCH</strong> sẽ được thay bằng dữ liệu mới nhất từ dự án.</p></div></div><div className="pw-sheet-columns"><span>Nhóm chi phí</span><span>Hạng mục</span><span>Dự toán</span><span>Nam đã chi</span><span>Phương đã chi</span><span>Trạng thái</span><span>Ghi chú</span></div><p className="pw-muted">Checklist, Menu, Nhà cung cấp và các tab khác không bị thay đổi.</p>
     </PlanningPanel>
 
     <PlanningPanel open={Boolean(draft)} title={task ? (draft?.updated_at ? 'Chi tiết công việc' : 'Thêm công việc') : (draft?.updated_at ? 'Sửa khoản ngân sách' : 'Thêm khoản ngân sách')} busy={disabled} onClose={() => setDraft(null)} wide footer={<><button className="pw-secondary" disabled={disabled} onClick={() => setDraft(null)}>Đóng</button><BusyButton busy={disabled} type="submit" form="planning-record-form">Lưu thay đổi</BusyButton></>}>
@@ -342,16 +367,22 @@ function BudgetQuickTable({ rows, view, budgets, onOpen }) {
     </table>
   </div>
 }
-function BudgetGroupTable({ groups, matches, byItem, onOpen, onAdd, filtered }) {
+function BudgetGroupTable({ groups, matches, byItem, members, onOpen, onAdd, filtered }) {
   const visible = groups.map((g) => ({ ...g, records:g.records.filter(matches) })).filter((g) => g.records.length || !filtered)
+  const nam = members.find((member) => personKey(member.name) === 'nam') || members.find((member) => personKey(member.name).startsWith('nam'))
+  const phuong = members.find((member) => personKey(member.name) === 'phuong') || members.find((member) => personKey(member.name).startsWith('phuong'))
+  const personSpent = (payments, member) => member ? payments.filter((payment) => !payment.voided_at && payment.payer_id === member.id).reduce((sum, payment) => sum + Number(payment.amount || 0), 0) : 0
   return <div className="pw-ledger-shell" role="region" aria-label="Bảng ngân sách theo nhóm" tabIndex={0}>
     <table className="pw-ledger">
-      <thead><tr><th>Nhóm</th><th>Khoản chi</th><th className="numeric">Dự toán</th><th className="numeric">Thực chi</th><th>Trạng thái</th></tr></thead>
+      <thead><tr><th>Nhóm chi phí</th><th>Hạng mục</th><th className="numeric">Dự toán</th><th className="numeric">Nam đã chi</th><th className="numeric">Phương đã chi</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead>
       {visible.map((g) => <tbody key={g.id}>{g.records.length ? g.records.map((row,index) => {
-        const actual=paymentTotal(byItem[row.id] || [])
+        const rowPayments=byItem[row.id] || []
+        const actual=paymentTotal(rowPayments)
+        const namSpent=personSpent(rowPayments,nam)
+        const phuongSpent=personSpent(rowPayments,phuong)
         const status=budgetPaymentState(row,actual)
-        return <tr key={row.id}>{index === 0 && <th className="pw-ledger-group" scope="rowgroup" rowSpan={g.records.length}><strong>{g.name}</strong></th>}<td><button className="pw-ledger-open" onClick={() => onOpen(row)} aria-label={`Mở ${row.name}`}>{row.name}</button></td><td className="numeric planned"><TableMoney value={row.planned} /></td><td className="numeric actual"><TableMoney value={actual} /></td><td><span className={`pw-ledger-status ${status}`}>{status === 'partial' ? 'Một phần' : status === 'paid' ? 'Đã trả' : 'Chưa chi'}</span></td></tr>
-      }) : <tr><th className="pw-ledger-group" scope="rowgroup"><strong>{g.name}</strong></th><td colSpan={4}><button className="pw-ledger-empty" onClick={() => onAdd(g.id)}><Plus size={12} />Thêm khoản chi</button></td></tr>}</tbody>)}
+        return <tr key={row.id}>{index === 0 && <th className="pw-ledger-group" scope="rowgroup" rowSpan={g.records.length}><strong>{g.name}</strong></th>}<td><button className="pw-ledger-open" onClick={() => onOpen(row)} aria-label={`Mở ${row.name}`}>{row.name}</button></td><td className="numeric planned"><TableMoney value={row.planned} /></td><td className="numeric person nam"><TableMoney value={namSpent} /></td><td className="numeric person phuong"><TableMoney value={phuongSpent} /></td><td><span className={`pw-ledger-status ${status}`}>{status === 'partial' ? 'Một phần' : status === 'paid' ? 'Đã trả' : 'Chưa chi'}</span></td><td className="pw-ledger-note" title={row.note || ''}>{row.note || '—'}</td></tr>
+      }) : <tr><th className="pw-ledger-group" scope="rowgroup"><strong>{g.name}</strong></th><td colSpan={6}><button className="pw-ledger-empty" onClick={() => onAdd(g.id)}><Plus size={12} />Thêm khoản chi</button></td></tr>}</tbody>)}
     </table>{!visible.length && <div className="pw-empty">Không có bản ghi phù hợp.</div>}
   </div>
 }
