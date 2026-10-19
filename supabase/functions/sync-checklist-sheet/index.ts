@@ -52,7 +52,7 @@ Deno.serve(async (req: Request) => {
         assignee: task.assignee || '',
         status: overdue ? 'Quá hạn' : (statusLabels[task.status] || task.status),
         priority: priorityLabels[task.priority] || task.priority,
-        deadline: task.deadline || '',
+        deadline: task.deadline ? task.deadline.split('-').reverse().join('/') : '',
         note: task.description || '',
         createdAt: task.created_at,
       }
