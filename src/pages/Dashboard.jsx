@@ -201,7 +201,7 @@ export default function Dashboard() {
           { to: '/menu-cost', label: 'Cost', icon: ChefHat, color: 'text-orange-400' },
           { to: '/suppliers', label: 'Nhà cung cấp', icon: Truck, color: 'text-emerald-400' },
           { to: '/notes', label: 'Ghi chú', icon: StickyNote, color: 'text-purple-400' },
-        ].map((action) => { const Icon = action.icon; return <Link key={action.to} to={action.to} className="flex min-h-14 min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-center text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 sm:min-w-32 sm:px-4"><Icon className={cn('h-5 w-5 shrink-0', action.color)} /><span className="hidden sm:inline">{action.label}</span></Link> })}
+        ].map((action) => { const Icon = action.icon; return <Link key={action.to} to={action.to} aria-label={action.label} title={action.label} className="flex min-h-14 min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-center text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 sm:min-w-32 sm:px-4"><Icon className={cn('h-5 w-5 shrink-0', action.color)} /><span className="hidden sm:inline">{action.label}</span></Link> })}
       </div>
 
       {/* KPI Cards */}
