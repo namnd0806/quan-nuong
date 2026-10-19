@@ -71,6 +71,7 @@ Deno.serve(async (req: Request) => {
         categoryOrder: category?.index ?? 999,
         name: item.name,
         planned,
+        totalSpent,
         namSpent,
         phuongSpent,
         status,
