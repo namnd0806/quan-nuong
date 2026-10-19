@@ -1,144 +1,130 @@
-import React from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
-import { Calendar, Download } from 'lucide-react'
+import React, { useRef, useState } from 'react'
+import { Calendar, ImageDown, Loader2, X } from 'lucide-react'
+import { toPng } from 'html-to-image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { formatVND, cn } from '@/lib/utils'
-
-const chartTooltip = {
-  contentStyle: {
-    background: 'rgba(10, 22, 40, 0.95)',
-    border: '1px solid rgba(59, 130, 246, 0.2)',
-    borderRadius: 12,
-    color: '#f8fafc',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-    backdropFilter: 'blur(12px)',
-  },
-  itemStyle: { color: '#f8fafc' },
-}
+import { useToast } from '@/components/ui/toast'
+import { cn } from '@/lib/utils'
 
 export default function FoodCostReportPanel({ open, onClose, data }) {
+  const toast = useToast()
+  const reportRef = useRef(null)
+  const [exporting, setExporting] = useState(false)
+
   if (!data) return null
 
-  const { kpis = [], distribution = [], overview = [], topOver = [], foodCostTarget = 30 } = data
+  const { kpis = [], topOver = [], foodCostTarget = 30 } = data
+  const now = new Date()
+  const reportPeriod = `Tháng ${now.getMonth() + 1}/${now.getFullYear()}`
+
+  const exportImage = async () => {
+    if (!reportRef.current || exporting) return
+    setExporting(true)
+    try {
+      const dataUrl = await toPng(reportRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: '#071426',
+        width: 800,
+        height: reportRef.current.scrollHeight,
+        style: { width: '800px', maxWidth: 'none' },
+      })
+      const link = document.createElement('a')
+      link.download = `bao-cao-food-cost-${now.toISOString().slice(0, 10)}.png`
+      link.href = dataUrl
+      link.click()
+      toast.success('Đã tạo ảnh báo cáo. Bạn có thể lưu hoặc gửi ảnh ngay.')
+    } catch (error) {
+      toast.error(`Không thể xuất ảnh: ${error.message}`)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl overflow-y-auto border-white/10" style={{ background: 'linear-gradient(145deg, rgba(10,20,35,0.98), rgba(5,15,30,0.98))', maxHeight: '90vh' }}>
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent">
-              Báo cáo Food Cost
-            </DialogTitle>
-            <Button variant="outline" size="sm" className="gap-2 rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
-              <Download className="h-4 w-4" /> Xuất PDF
-            </Button>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent
+        maxWidth="4xl"
+        className="flex max-h-[92dvh] flex-col overflow-hidden rounded-3xl border-white/10 p-0"
+        style={{ background: 'linear-gradient(145deg, rgba(10,20,35,0.99), rgba(5,15,30,0.99))' }}
+      >
+        <DialogHeader className="shrink-0 px-4 py-4 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <DialogTitle className="truncate text-xl sm:text-2xl">Báo cáo Food Cost</DialogTitle>
+              <p className="mt-1 text-xs text-gray-400">Tổng hợp giá vốn và các món cần điều chỉnh</p>
+            </div>
+            <button type="button" onClick={onClose} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-300 transition-colors hover:bg-white/10 hover:text-white" aria-label="Đóng báo cáo" title="Đóng">
+              <X className="h-5 w-5" />
+            </button>
           </div>
         </DialogHeader>
-        <DialogBody>
-          <div className="space-y-6">
-            {/* Period */}
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Calendar className="h-4 w-4" />
-              <span>Kỳ báo cáo: Tháng {new Date().getMonth() + 1}/{new Date().getFullYear()}</span>
+
+        <DialogBody className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-5">
+          <div ref={reportRef} className="space-y-4 rounded-2xl bg-[#071426] p-3 sm:space-y-5 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+              <div>
+                <div className="text-lg font-bold text-white">BÁO CÁO FOOD COST</div>
+                <div className="mt-0.5 text-xs text-gray-400">Mộc Nướng · Nướng Chill</div>
+              </div>
+              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300">
+                <Calendar className="h-4 w-4 text-blue-400" /> {reportPeriod}
+              </div>
             </div>
 
-            {/* KPIs */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {kpis.map((kpi) => (
-                <div key={kpi.label} className="rounded-2xl border border-white/10 p-4" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
-                  <div className="text-xs font-medium uppercase tracking-wider text-gray-400">{kpi.label}</div>
-                  <div className={cn('mt-2 text-2xl font-bold', kpi.tone || 'text-foreground')}>{kpi.value}</div>
-                  <div className="mt-1 text-xs text-gray-500">{kpi.sub}</div>
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              {kpis.slice(0, 4).map((kpi, index) => (
+                <div key={kpi.label} className={cn('relative min-w-0 overflow-hidden rounded-2xl border p-3 sm:p-4', index === 0 ? 'border-amber-400/25 bg-amber-500/[0.07]' : index === 1 ? 'border-blue-400/25 bg-blue-500/[0.07]' : index === 2 ? 'border-purple-400/25 bg-purple-500/[0.07]' : 'border-emerald-400/25 bg-emerald-500/[0.07]')}>
+                  <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-gray-400 sm:text-xs">{kpi.label}</div>
+                  <div className={cn('mt-1.5 break-words text-lg font-bold leading-tight sm:text-2xl', kpi.tone || 'text-white')}>{kpi.value}</div>
+                  <div className="mt-1 truncate text-[10px] text-gray-500 sm:text-xs">{kpi.sub}</div>
                 </div>
               ))}
             </div>
 
-            {/* Charts & Tables */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {/* Pie Chart */}
-              <div className="rounded-2xl border border-white/10 p-5" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
-                <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-300">Phân bổ giá vốn theo danh mục</h3>
-                {distribution.length === 0 ? (
-                  <div className="flex h-64 items-center justify-center text-sm text-gray-400">Chưa có dữ liệu</div>
-                ) : (
-                  <div className="flex items-center gap-6">
-                    <ResponsiveContainer width={180} height={180}>
-                      <PieChart>
-                        <Pie data={distribution} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value" stroke="none">
-                          {distribution.map((d, i) => <Cell key={i} fill={d.color} />)}
-                        </Pie>
-                        <Tooltip {...chartTooltip} formatter={(v) => `${v}%`} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="flex-1 space-y-2">
-                      {distribution.map((d) => (
-                        <div key={d.name} className="flex items-center justify-between gap-3 text-sm">
-                          <div className="flex items-center gap-2">
-                            <span className="h-2 w-2 rounded-full" style={{ background: d.color }} />
-                            <span className="text-gray-300">{d.name}</span>
-                          </div>
-                          <span className="font-semibold text-foreground">{d.value}%</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Overview */}
-              <div className="rounded-2xl border border-white/10 p-5" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
-                <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-300">Tổng quan</h3>
-                <div className="space-y-3">
-                  {overview.map((item) => (
-                    <div key={item.label} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 p-3">
-                      <span className="text-sm text-gray-400">{item.label}</span>
-                      <span className="text-lg font-bold text-foreground">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Top over target */}
-            <div className="rounded-2xl border border-white/10 p-5" style={{ background: 'linear-gradient(145deg, rgba(15,30,50,0.6), rgba(10,22,40,0.8))' }}>
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-300">Top món vượt mục tiêu</h3>
-                <span className="text-xs text-gray-500">Mục tiêu: ≤ {foodCostTarget}%</span>
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
+              <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-3 sm:px-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-200 sm:text-sm">Món vượt mục tiêu</h3>
+                <span className="shrink-0 rounded-lg bg-red-500/10 px-2 py-1 text-[10px] font-medium text-red-300 sm:text-xs">Mục tiêu ≤ {foodCostTarget}%</span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[560px] table-fixed text-xs sm:text-sm">
                   <thead>
-                    <tr className="border-b border-white/10 text-left text-xs uppercase tracking-wider text-gray-400">
-                      <th className="p-3 font-semibold">Món ăn</th>
-                      <th className="p-3 font-semibold">Danh mục</th>
-                      <th className="p-3 font-semibold">Food cost</th>
-                      <th className="p-3 font-semibold">Mục tiêu</th>
-                      <th className="p-3 font-semibold">Chênh lệch</th>
+                    <tr className="border-b border-white/10 bg-white/[0.035] text-left text-[10px] uppercase tracking-wider text-gray-400 sm:text-xs">
+                      <th className="w-[31%] px-3 py-2.5 font-semibold">Món ăn</th>
+                      <th className="w-[23%] px-3 py-2.5 font-semibold">Danh mục</th>
+                      <th className="w-[16%] px-2 py-2.5 text-center font-semibold">Food cost</th>
+                      <th className="w-[14%] px-2 py-2.5 text-center font-semibold">Mục tiêu</th>
+                      <th className="w-[16%] px-2 py-2.5 text-center font-semibold">Chênh lệch</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {topOver.map((t) => (
-                      <tr key={t.name} className="border-b border-white/5 last:border-0">
-                        <td className="p-3 font-medium text-foreground">{t.name}</td>
-                        <td className="p-3 text-gray-400">{t.cat}</td>
-                        <td className="p-3 font-semibold text-red-400">{t.fc}</td>
-                        <td className="p-3 text-gray-400">≤ {t.target || 30}%</td>
-                        <td className="p-3 font-semibold text-red-400">{t.diff}</td>
+                    {topOver.map((item) => (
+                      <tr key={`${item.name}-${item.cat}`} className="border-b border-white/[0.07] last:border-0">
+                        <td className="px-3 py-3 font-medium text-white">{item.name}</td>
+                        <td className="px-3 py-3 text-gray-400">{item.cat || '—'}</td>
+                        <td className="px-2 py-3 text-center font-bold text-red-300">{item.fc}</td>
+                        <td className="px-2 py-3 text-center text-gray-400">≤ {item.target || 30}%</td>
+                        <td className="px-2 py-3 text-center font-bold text-red-400">{item.diff}</td>
                       </tr>
                     ))}
-                    {topOver.length === 0 && (
-                      <tr><td colSpan={5} className="p-8 text-center text-gray-400">
-                        <div className="text-4xl">🎉</div>
-                        <div className="mt-2">Không có món nào vượt mục tiêu</div>
-                      </td></tr>
-                    )}
+                    {topOver.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-gray-400">Không có món nào vượt mục tiêu.</td></tr>}
                   </tbody>
                 </table>
               </div>
             </div>
+
+            <div className="text-right text-[10px] text-gray-600">Xuất từ hệ thống quản lý Mộc Nướng</div>
           </div>
         </DialogBody>
+
+        <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-white/10 bg-[#071426]/95 px-4 py-4 sm:flex sm:justify-end sm:px-6">
+          <Button variant="secondary" onClick={onClose} className="h-11 rounded-xl border-white/10 bg-white/5 hover:bg-white/10"><X className="mr-2 h-4 w-4" /> Thoát</Button>
+          <Button onClick={exportImage} disabled={exporting} className="h-11 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/20">
+            {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageDown className="mr-2 h-4 w-4" />}
+            {exporting ? 'Đang tạo ảnh...' : 'Xuất ảnh'}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )
