@@ -13,7 +13,20 @@ function doPost(e) {
     const sheet = spreadsheet.getSheetByName(payload.sheetName || DEFAULT_SHEET);
     if (!sheet) return json_({ ok: false, error: 'Không tìm thấy tab ngân sách.' });
 
-    renderBudget_(sheet, payload.rows);
+    try {
+      renderBudget_(sheet, payload.rows);
+    } catch (error) {
+      // Older versions of this workbook used a native Google Sheets table.
+      // That table can block deleting multiple columns. Recreate the tab once,
+      // then all later syncs keep the same clean seven-column sheet.
+      if (!String(error).includes('single column')) throw error;
+      const originalName = sheet.getName();
+      const originalIndex = sheet.getIndex();
+      const replacement = spreadsheet.insertSheet('__BUDGET_SYNC_' + Date.now(), originalIndex);
+      renderBudget_(replacement, payload.rows);
+      spreadsheet.deleteSheet(sheet);
+      replacement.setName(originalName);
+    }
     return json_({ ok: true, rows: payload.rows.length, updatedAt: new Date().toISOString() });
   } catch (error) {
     return json_({ ok: false, error: String(error && error.message ? error.message : error) });

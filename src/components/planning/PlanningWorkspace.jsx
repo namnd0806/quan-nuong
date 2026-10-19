@@ -129,7 +129,14 @@ export default function PlanningWorkspace({ kind }) {
       setSheetConfirmOpen(false)
       toast.success(`Đã đồng bộ ${data.rows || 0} khoản ngân sách sang Google Sheet.`)
     } catch (error) {
-      toast.error(error.message || 'Không đồng bộ được Google Sheet. Hãy thử lại.')
+      let message = error.message || 'Không đồng bộ được Google Sheet. Hãy thử lại.'
+      try {
+        const body = await error.context?.json()
+        if (body?.error) message = body.error
+      } catch {
+        // Keep the client error when the response body is unavailable.
+      }
+      toast.error(message)
     } finally {
       setSheetSyncing(false)
     }
