@@ -2,6 +2,7 @@ import React from 'react'
 import { beforeAll, beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, within, waitFor, cleanup } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { toBlob } from 'html-to-image'
 import PlanningWorkspace from '../src/components/planning/PlanningWorkspace'
 
 const mocks = vi.hoisted(() => ({ collections: {}, rpc: vi.fn(), success: vi.fn(), error: vi.fn() }))
@@ -202,6 +203,17 @@ describe('Checklist and Budget interactions', () => {
   const emptyRow=within(region).getByRole('button',{name:'Mở Chưa chi'}).closest('tr')
   expect([...emptyRow.querySelectorAll('td.numeric.person')].every((cell) => cell.textContent === '—')).toBe(true)
   expect(region.textContent).not.toContain('0k')
+ })
+ it('shows the generated table image in a preview before offering the save action', async () => {
+  Object.defineProperty(URL,'createObjectURL',{configurable:true,value:vi.fn(()=>'blob:table-preview')})
+  Object.defineProperty(URL,'revokeObjectURL',{configurable:true,value:vi.fn()})
+  vi.mocked(toBlob).mockResolvedValue(new Blob(['image'],{type:'image/png'}))
+  mount('budget')
+  fireEvent.click(screen.getByRole('button',{name:'Dạng bảng'}))
+  fireEvent.click(screen.getByRole('button',{name:'Chụp bảng thành ảnh'}))
+  const dialog=await screen.findByRole('dialog',{name:'Xem trước ảnh bảng'})
+  expect(await within(dialog).findByRole('img',{name:'Xem trước bảng phân bổ ngân sách'})).toHaveProperty('src','blob:table-preview')
+  expect(within(dialog).getByRole('button',{name:'Lưu ảnh'}).disabled).toBe(false)
  })
  it('moves records to the selected group before deleting their old group', async () => {
   mocks.collections.main_categories.rows.push({id:'group-2',name:'Thiết bị',sort:2,created_at:'2026-10-17'})
