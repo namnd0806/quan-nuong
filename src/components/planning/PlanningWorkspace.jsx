@@ -391,7 +391,7 @@ function TaskGroupTable({ groups, matches, onOpen, onAdd, filtered }) {
       <thead><tr><th>Nhóm</th><th>Công việc</th><th>Phụ trách</th><th>Trạng thái</th><th>Ưu tiên</th><th>Hạn</th><th>Ghi chú</th></tr></thead>
       {visible.map((group) => <tbody key={group.id}>{group.records.length ? group.records.map((row, index) => {
         const status = isOverdue(row) ? 'overdue' : row.status
-        return <tr key={row.id}>{index === 0 && <th className="pw-ledger-group" scope="rowgroup" rowSpan={group.records.length}><strong>{group.name}</strong></th>}<td><button className="pw-ledger-open" onClick={() => onOpen(row)} aria-label={`Mở ${row.title}`}>{row.title}</button></td><td className="pw-task-ledger-owner"><span className="pw-avatar">{personName(row.assignee).slice(0,1) || '—'}</span><span>{personName(row.assignee) || 'Chưa giao'}</span></td><td><span className={`pw-ledger-status task-${status}`}>{taskStates[status] || status}</span></td><td><span className={`pw-task-ledger-priority ${row.priority}`}>{priorities[row.priority] || row.priority}</span></td><td className={`pw-task-ledger-date ${status === 'overdue' ? 'overdue' : ''}`}>{row.deadline ? date(row.deadline) : '—'}</td><td className="pw-ledger-note" title={row.description || ''}>{row.description || '—'}</td></tr>
+        return <tr key={row.id}>{index === 0 && <th className="pw-ledger-group" scope="rowgroup" rowSpan={group.records.length}><strong>{group.name}</strong></th>}<td><button className="pw-ledger-open" onClick={() => onOpen(row)} aria-label={`Mở ${row.title}`}>{row.title}</button></td><td className="pw-task-ledger-owner"><span className="pw-avatar">{personName(row.assignee).slice(0,1) || '—'}</span><span>{personName(row.assignee) || 'Chưa giao'}</span></td><td><span className={`pw-ledger-status task-${status}`}>{taskStates[status] || status}</span></td><td><span className={`pw-task-ledger-priority ${row.priority}`}>{priorities[row.priority] || row.priority}</span></td><td className={`pw-task-ledger-date ${status === 'overdue' ? 'overdue' : ''}`}>{row.deadline ? date(row.deadline) : '—'}</td><td className="pw-ledger-note"><LedgerNote value={row.description} /></td></tr>
       }) : <tr><th className="pw-ledger-group" scope="rowgroup"><strong>{group.name}</strong></th><td colSpan={6}><button className="pw-ledger-empty" onClick={() => onAdd(group.id)}><Plus size={12} />Thêm công việc</button></td></tr>}</tbody>)}
       {rows.length > 0 && <tfoot><tr className="pw-task-ledger-total"><td colSpan={2}><span>Tổng công việc</span><strong>{totals.total}</strong></td><td><span>Cần làm <strong>{totals.todo}</strong></span></td><td><span>Đang làm <strong>{totals.doing}</strong></span></td><td><span>Hoàn thành <strong>{totals.done}</strong></span></td><td colSpan={2}><span>Quá hạn <strong>{totals.overdue}</strong></span></td></tr></tfoot>}
     </table>{!visible.length && <div className="pw-empty">Không có công việc phù hợp.</div>}
@@ -418,13 +418,22 @@ function BudgetGroupTable({ groups, matches, byItem, members, onOpen, onAdd, fil
         const namSpent=personSpent(rowPayments,nam)
         const phuongSpent=personSpent(rowPayments,phuong)
         const status=budgetPaymentState(row,actual)
-        return <tr key={row.id}>{index === 0 && <th className="pw-ledger-group" scope="rowgroup" rowSpan={g.records.length}><strong>{g.name}</strong></th>}<td><button className="pw-ledger-open" onClick={() => onOpen(row)} aria-label={`Mở ${row.name}`}>{row.name}</button></td><td className="numeric planned"><TableMoney value={row.planned} /></td><td className="numeric person nam"><TableMoney value={namSpent} /></td><td className="numeric person phuong"><TableMoney value={phuongSpent} /></td><td><span className={`pw-ledger-status ${status}`}>{status === 'partial' ? 'Một phần' : status === 'paid' ? 'Đã trả' : 'Chưa chi'}</span></td><td className="pw-ledger-note" title={row.note || ''}>{row.note || '—'}</td></tr>
+        return <tr key={row.id}>{index === 0 && <th className="pw-ledger-group" scope="rowgroup" rowSpan={g.records.length}><strong>{g.name}</strong></th>}<td><button className="pw-ledger-open" onClick={() => onOpen(row)} aria-label={`Mở ${row.name}`}>{row.name}</button></td><td className="numeric planned"><TableMoney value={row.planned} /></td><td className="numeric person nam"><TableMoney value={namSpent} /></td><td className="numeric person phuong"><TableMoney value={phuongSpent} /></td><td><span className={`pw-ledger-status ${status}`}>{status === 'partial' ? 'Một phần' : status === 'paid' ? 'Đã trả' : 'Chưa chi'}</span></td><td className="pw-ledger-note"><LedgerNote value={row.note} /></td></tr>
       }) : <tr><th className="pw-ledger-group" scope="rowgroup"><strong>{g.name}</strong></th><td colSpan={6}><button className="pw-ledger-empty" onClick={() => onAdd(g.id)}><Plus size={12} />Thêm khoản chi</button></td></tr>}</tbody>)}
       {visible.some((group) => group.records.length) && <tfoot><tr className="pw-ledger-grand-total"><td colSpan={2}><span>Tổng đã chi</span><strong>{money(totals.actual)}</strong></td><td className="numeric planned"><TableMoney value={totals.planned} /></td><td className="numeric person nam"><TableMoney value={totals.nam} /></td><td className="numeric person phuong"><TableMoney value={totals.phuong} /></td><td colSpan={2}><span className="pw-spending-ratio nam">Nam <strong>{namRatio}%</strong></span><span className="pw-spending-ratio phuong">Phương <strong>{phuongRatio}%</strong></span></td></tr></tfoot>}
     </table>{!visible.length && <div className="pw-empty">Không có bản ghi phù hợp.</div>}
   </div>
 }
-function TableMoney({ value }) { return <><span className="pw-table-money-full">{money(value)}</span><span className="pw-table-money-compact">{compact(value)}</span></> }
+function TableMoney({ value }) {
+  const full = money(value)
+  const short = compact(value)
+  if (full === short) return <span className="pw-table-money-full pw-table-money-compact">{full}</span>
+  return <><span className="pw-table-money-full">{full}</span><span className="pw-table-money-compact">{short}</span></>
+}
+function LedgerNote({ value }) {
+  const note = value || '—'
+  return <span className="pw-ledger-note-text" tabIndex={0} aria-label={`Ghi chú: ${note}`}>{note}</span>
+}
 function BudgetState({ state, planned, actual, metric = false }) {
   const target = Math.max(Number(planned || 0), 0)
   const ratio = target > 0 ? Math.min(100, Math.round(Number(actual || 0) / target * 100)) : 0
