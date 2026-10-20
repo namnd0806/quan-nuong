@@ -17,14 +17,16 @@ export function formatCompactVND(value) {
   const amount = Number(value || 0)
   if (!Number.isFinite(amount)) return '0k'
 
-  const useMillions = Math.abs(amount) >= 1_000_000
-  const divisor = useMillions ? 1_000_000 : 1_000
-  const maximumFractionDigits = useMillions ? 6 : 3
-  const formatted = new Intl.NumberFormat('vi-VN', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits,
-    useGrouping: false,
-  }).format(amount / divisor)
+  const sign = amount < 0 ? '-' : ''
+  const dong = Math.abs(Math.trunc(amount))
+  const millions = Math.floor(dong / 1_000_000)
+  const thousands = Math.floor((dong % 1_000_000) / 1_000)
+  const remainder = dong % 1_000
+  const parts = []
 
-  return `${formatted}${useMillions ? 'tr' : 'k'}`
+  if (millions) parts.push(`${new Intl.NumberFormat('vi-VN').format(millions)}tr`)
+  if (thousands) parts.push(`${thousands}k`)
+  if (remainder) parts.push(`${remainder}đ`)
+
+  return parts.length ? `${sign}${parts.join('')}` : '0k'
 }
