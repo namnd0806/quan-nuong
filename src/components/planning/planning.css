@@ -302,3 +302,18 @@
 /* The generated PNG is reviewed here before the user chooses to save it. */
 .pw-image-preview-panel{width:min(980px,calc(100vw - 48px));max-height:calc(100dvh - 44px);border-color:#486889}.pw-image-preview-panel .pw-dialog-body{padding:16px;background:linear-gradient(145deg,#071426,#0a192b)}.pw-image-preview-panel .pw-dialog-footer{padding:13px 18px}.pw-image-preview{min-height:260px;display:grid;place-items:center;gap:12px}.pw-image-preview>img{display:block;width:100%;height:auto;border:1px solid #385573;border-radius:12px;background:#071426;box-shadow:0 16px 50px #0008}.pw-image-preview>p{width:100%;margin:0!important;color:#8fa7c2;font-size:11px;text-align:center}.pw-image-preview>p strong{color:#cfe1f5}.pw-image-preview-loading{min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:#9eb7d4}.pw-image-preview-loading strong{color:#edf5ff;font-size:14px}.pw-image-preview-loading span{font-size:11px}.pw-image-preview-panel .pw-dialog-footer .pw-primary{background:linear-gradient(135deg,#356ff3,#3d8cf6);box-shadow:0 7px 22px #1c5be94a}
 @media(max-width:767px){.pw-dialog.pw-image-preview-panel{width:100vw;height:100dvh;max-height:100dvh;border-radius:0}.pw-image-preview-panel .pw-dialog-body{padding:12px 10px 96px}.pw-image-preview{align-content:start;min-height:220px}.pw-image-preview>img{border-radius:9px}.pw-image-preview-loading{min-height:55dvh}.pw-image-preview-panel .pw-dialog-footer{padding:11px 12px max(13px,env(safe-area-inset-bottom))}.pw-image-preview-panel .pw-dialog-footer>button{flex:1;min-width:0}}
+
+/* The saved image uses larger, print-friendly type without changing the compact app table. */
+.pw-ledger-capture.is-exporting .pw-ledger thead th{font-size:12px;line-height:1.3}
+.pw-ledger-capture.is-exporting .pw-ledger td{height:52px;padding:10px 9px;font-size:13px;line-height:1.42}
+.pw-ledger-capture.is-exporting .pw-ledger-group strong,
+.pw-ledger-capture.is-exporting .pw-ledger .pw-ledger-open{font-size:13px;line-height:1.42}
+.pw-ledger-capture.is-exporting .pw-ledger .numeric{font-size:12px}
+.pw-ledger-capture.is-exporting .pw-ledger-status{font-size:12px;line-height:1.3}
+.pw-ledger-capture.is-exporting .pw-ledger-note-text{font-size:11px!important;line-height:1.42!important}
+.pw-ledger-capture.is-exporting .pw-ledger-grand-total td{font-size:11px!important}
+.pw-ledger-capture.is-exporting .pw-ledger-grand-total td:first-child>span{font-size:10px}
+.pw-ledger-capture.is-exporting .pw-ledger-grand-total td:first-child>strong{font-size:17px}
+.pw-ledger-capture.is-exporting .pw-ratio-item{font-size:9px}
+.pw-ledger-capture.is-exporting .pw-ratio-item strong{font-size:10px}
+.pw-ledger-capture.is-exporting .pw-ledger-export-foot{font-size:11px}
