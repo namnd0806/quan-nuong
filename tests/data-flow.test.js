@@ -23,8 +23,9 @@ test('menu totals include variable costs with safe legacy fallback', () => {
 
 test('compact VND keeps exact dong values and only uses millions from one million', () => {
   assert.equal(formatCompactVND(13_000_000), '13tr')
-  assert.equal(formatCompactVND(1_886_200), '1,8862tr')
-  assert.equal(formatCompactVND(999_999), '999,999k')
+  assert.equal(formatCompactVND(1_862_000), '1tr862k')
+  assert.equal(formatCompactVND(1_886_200), '1tr886k200đ')
+  assert.equal(formatCompactVND(999_999), '999k999đ')
   assert.equal(formatCompactVND(500_000), '500k')
-  assert.equal(formatCompactVND(448_188), '448,188k')
+  assert.equal(formatCompactVND(448_188), '448k188đ')
 })
