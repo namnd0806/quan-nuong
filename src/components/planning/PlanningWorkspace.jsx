@@ -5,14 +5,14 @@ import { useCollection } from '@/hooks/useCollection'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/toast'
 import { supabase } from '@/lib/supabase'
-import { formatVND } from '@/lib/utils'
+import { formatCompactVND, formatVND } from '@/lib/utils'
 import { localDate, isOverdue } from '@/lib/data-flow'
 import { taskStates, priorities, budgetStates, planningGroups, spendingSummary, paymentTotal, budgetPaymentState, personName, personKey, taskMatches, validMoney } from '@/lib/planning-model'
 import { Attachments, PlanningPanel, PlanningNav, GroupIcon, iconSections, Field, Stat, Pill, BusyButton, History } from './PlanningParts'
 import './planning.css'
 
 const money = (value) => formatVND(Number(value || 0))
-const compact = (value) => `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(Number(value || 0) / 1000000)}tr`
+const compact = (value) => formatCompactVND(value)
 const date = (value) => value ? value.split('-').reverse().join('/') : 'Chưa đặt hạn'
 const emptyRecord = (kind, group = '') => ({ id: crypto.randomUUID(), title: '', group, assignee: '', status: kind === 'tasks' ? 'todo' : 'pending', priority: 'medium', deadline: '', description: '', linked_budget_id: '', attachments: [], planned: '', agreed_amount: '', owner: '', note: '' })
 
