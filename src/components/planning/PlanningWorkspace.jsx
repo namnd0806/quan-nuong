@@ -428,7 +428,8 @@ function TableMoney({ value }) {
   const full = money(value)
   const short = compact(value)
   if (full === short) return <span className="pw-table-money-full pw-table-money-compact">{full}</span>
-  return <><span className="pw-table-money-full">{full}</span><span className="pw-table-money-compact">{short}</span></>
+  const segments = short.match(/-?[\d.]+(?:tr|k|đ)/g) || [short]
+  return <><span className="pw-table-money-full">{full}</span><span className="pw-table-money-compact">{segments.map((segment, index) => <React.Fragment key={`${segment}-${index}`}>{index > 0 && <wbr />}{segment}</React.Fragment>)}</span></>
 }
 function LedgerNote({ value }) {
   const note = value || '—'
