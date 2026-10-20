@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { LayoutList, Table2, Banknote, Plus, Search, ChevronDown, ChevronUp, ChevronRight, Check, Settings2, RefreshCw, Pencil, Trash2, Wallet, Calendar, Loader2, GripVertical, Link as LinkIcon, CloudUpload, ShieldCheck } from 'lucide-react'
+import { LayoutList, Table2, Banknote, Plus, Search, ChevronDown, ChevronUp, ChevronRight, Check, Settings2, RefreshCw, Pencil, Trash2, Wallet, Calendar, Loader2, GripVertical, Link as LinkIcon, CloudUpload, ShieldCheck, ImageDown } from 'lucide-react'
+import { toBlob } from 'html-to-image'
 import { useCollection } from '@/hooks/useCollection'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/toast'
@@ -45,9 +46,11 @@ export default function PlanningWorkspace({ kind }) {
   const [busy, setBusy] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [sheetSyncing, setSheetSyncing] = useState(false)
+  const [exportingImage, setExportingImage] = useState(false)
   const [sheetConfirmOpen, setSheetConfirmOpen] = useState(false)
   const [sheetSyncResult, setSheetSyncResult] = useState(null)
   const syncLock = useRef(false)
+  const tableCaptureRef = useRef(null)
   const groupOrderRef = useRef([])
   const draggedGroupRef = useRef(null)
   const groupOrderChangedRef = useRef(false)
@@ -139,6 +142,49 @@ export default function PlanningWorkspace({ kind }) {
       toast.error(message)
     } finally {
       setSheetSyncing(false)
+    }
+  }
+  const exportTableImage = async () => {
+    if (!tableCaptureRef.current || exportingImage) return
+    setExportingImage(true)
+    let exportNode
+    try {
+      exportNode = tableCaptureRef.current.cloneNode(true)
+      exportNode.classList.add('is-exporting')
+      exportNode.setAttribute('aria-hidden', 'true')
+      Object.assign(exportNode.style, { position:'fixed', left:'-12000px', top:'0', width:'1080px', maxWidth:'none', zIndex:'-1' })
+      document.body.appendChild(exportNode)
+      await document.fonts?.ready
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      const height = Math.ceil(exportNode.scrollHeight)
+      const pixelRatio = height > 5000 ? 1 : height > 3000 ? 1.5 : 2
+      const blob = await toBlob(exportNode, { cacheBust:true, pixelRatio, backgroundColor:'#071426', width:1080, height })
+      if (!blob) throw new Error('Không tạo được tệp ảnh')
+      const fileName = `${task ? 'bang-checklist' : 'bang-phan-bo-ngan-sach'}-${localDate()}.png`
+      const file = new File([blob], fileName, { type:'image/png' })
+      if (navigator.share && navigator.canShare?.({ files:[file] })) {
+        try {
+          await navigator.share({ files:[file], title:task ? 'Bảng checklist' : 'Bảng phân bổ ngân sách' })
+          toast.success('Ảnh bảng đã sẵn sàng để lưu hoặc gửi đi.')
+          return
+        } catch (shareError) {
+          if (shareError.name === 'AbortError') return
+        }
+      }
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.download = fileName
+      link.href = objectUrl
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+      toast.success('Đã tạo ảnh đầy đủ của bảng.')
+    } catch (error) {
+      toast.error(`Không thể chụp bảng: ${error.message}`)
+    } finally {
+      exportNode?.remove()
+      setExportingImage(false)
     }
   }
 
@@ -292,10 +338,10 @@ export default function PlanningWorkspace({ kind }) {
   return <div className={`pw ${task ? 'pw-tasks' : 'pw-budget'}`}>
     <header className="pw-titlebar pw-compact-header"><h1>{task ? 'Công việc' : 'Ngân sách'}</h1><button className="pw-primary" aria-label={task ? 'Thêm công việc' : 'Thêm khoản ngân sách'} onClick={() => openNew()}><Plus size={19} /><span className="pw-add-label">Thêm<span className="pw-desktop-label"> {task ? 'công việc' : 'ngân sách'}</span></span></button></header>
     {task ? <div className="pw-stats"><Stat label="Cần làm" value={stats.todo} onClick={() => setQuickView('todo')} /><Stat label="Đang làm" value={stats.doing} tone="amber" onClick={() => setQuickView('doing')} /><Stat label="Quá hạn" value={stats.overdue} tone="red" onClick={() => setQuickView('overdue')} /></div> : <><div className="pw-stats budget" style={{ '--people-count': members.rows.length }}><Stat label="Tổng dự toán" value={money(summary.planned)} tone="blue" onClick={() => setBudgetView({ type:'planned', label:'Tổng dự toán' })} /><Stat label="Tổng thực chi" value={money(summary.actual)} tone="teal" onClick={() => setBudgetView({ type:'actual', label:'Tổng thực chi' })} />{summary.people.map((p, index) => <Stat key={p.id} label={`${personName(p.name)} đã chi`} value={money(p.spent)} tone={`person person-${index % 2}`} onClick={() => setBudgetView({ type:'person', memberId:p.id, label:`${personName(p.name)} đã chi` })} />)}</div>{summary.unassigned !== 0 && <button className={`pw-unassigned ${state === 'unassigned' ? 'active' : ''}`} aria-pressed={state === 'unassigned'} onClick={() => { setSearch(''); setState(state === 'unassigned' ? 'all' : 'unassigned'); setExpanded({}) }}><span>Chưa rõ người trả <strong>{money(summary.unassigned)}</strong></span><span>{state === 'unassigned' ? 'Bỏ lọc' : 'Xem khoản chi'} <ChevronDown size={14} /></span></button>}</>}
-    <div className="pw-toolbar"><div className="pw-search"><Search size={18} /><input aria-label="Tìm kiếm" placeholder={task ? 'Tìm công việc…' : 'Tìm khoản chi…'} value={search} onChange={(e) => setSearch(e.target.value)} /></div><div className="pw-filters">{task ? <>{[['all','Tất cả'],['mine','Của tôi'],['both','Cả hai']].map(([key,label]) => <button className={`pw-chip ${scope === key ? 'active' : ''}`} aria-pressed={scope === key} key={key} onClick={() => setScope(key)}>{label}</button>)}<select className="pw-filter-select" aria-label="Lọc trạng thái" value={state} onChange={(e) => setState(e.target.value)}><option value="all">Mọi trạng thái</option>{Object.entries(taskStates).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></> : <label className="pw-budget-status-filter"><span>Trạng thái</span><select className="pw-filter-select" aria-label="Lọc trạng thái thanh toán" value={state} onChange={(e) => setState(e.target.value)}><option value="all">Mọi trạng thái</option><option value="pending">Chưa chi</option><option value="partial">Đã cọc / Một phần</option><option value="paid">Đã thanh toán</option><option value="unassigned">Chưa rõ người trả</option></select></label>}</div><div className="pw-tool-actions"><div className="pw-view-switch" role="group" aria-label={`Kiểu hiển thị ${task ? 'checklist' : 'ngân sách'}`}><button type="button" aria-label="Dạng nhóm" aria-pressed={layout === 'groups'} onClick={() => setLayout('groups')}><LayoutList size={16} /><span>Nhóm</span></button><button type="button" aria-label="Dạng bảng" aria-pressed={layout === 'table'} onClick={() => setLayout('table')}><Table2 size={16} /><span>Bảng</span></button></div><button className="pw-secondary pw-manage-groups" aria-label="Quản lý nhóm" title="Quản lý nhóm" onClick={openGroupManager}><Settings2 size={17} /><span>Nhóm</span></button><button className="pw-sheet-sync" type="button" disabled={sheetSyncing} onClick={() => setSheetConfirmOpen(true)} aria-label={`Đồng bộ ${task ? 'checklist' : 'ngân sách'} sang Google Sheet`} title={`Ghi đè tab ${task ? 'CHECKLIST' : 'PHÂN BỔ NGÂN SÁCH'} bằng dữ liệu hiện tại`}><CloudUpload size={17} /><span className="pw-sheet-sync-full">Đồng bộ Sheet</span><span className="pw-sheet-sync-short">Sheet</span></button><button className="pw-reload" onClick={syncNow} disabled={busy || syncing} aria-busy={syncing} aria-label={syncing ? "Đang đồng bộ dữ liệu" : "Tải lại dữ liệu"} title={syncing ? "Đang đồng bộ…" : "Tải lại dữ liệu"}><RefreshCw size={17} className={syncing ? "animate-spin" : undefined} /></button></div></div>
+    <div className="pw-toolbar"><div className="pw-search"><Search size={18} /><input aria-label="Tìm kiếm" placeholder={task ? 'Tìm công việc…' : 'Tìm khoản chi…'} value={search} onChange={(e) => setSearch(e.target.value)} /></div><div className="pw-filters">{task ? <>{[['all','Tất cả'],['mine','Của tôi'],['both','Cả hai']].map(([key,label]) => <button className={`pw-chip ${scope === key ? 'active' : ''}`} aria-pressed={scope === key} key={key} onClick={() => setScope(key)}>{label}</button>)}<select className="pw-filter-select" aria-label="Lọc trạng thái" value={state} onChange={(e) => setState(e.target.value)}><option value="all">Mọi trạng thái</option>{Object.entries(taskStates).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></> : <label className="pw-budget-status-filter"><span>Trạng thái</span><select className="pw-filter-select" aria-label="Lọc trạng thái thanh toán" value={state} onChange={(e) => setState(e.target.value)}><option value="all">Mọi trạng thái</option><option value="pending">Chưa chi</option><option value="partial">Đã cọc / Một phần</option><option value="paid">Đã thanh toán</option><option value="unassigned">Chưa rõ người trả</option></select></label>}</div><div className="pw-tool-actions"><div className="pw-view-switch" role="group" aria-label={`Kiểu hiển thị ${task ? 'checklist' : 'ngân sách'}`}><button type="button" aria-label="Dạng nhóm" aria-pressed={layout === 'groups'} onClick={() => setLayout('groups')}><LayoutList size={16} /><span>Nhóm</span></button><button type="button" aria-label="Dạng bảng" aria-pressed={layout === 'table'} onClick={() => setLayout('table')}><Table2 size={16} /><span>Bảng</span></button></div><button className="pw-secondary pw-manage-groups" aria-label="Quản lý nhóm" title="Quản lý nhóm" onClick={openGroupManager}><Settings2 size={17} /><span>Nhóm</span></button><button className="pw-sheet-sync" type="button" disabled={sheetSyncing} onClick={() => setSheetConfirmOpen(true)} aria-label={`Đồng bộ ${task ? 'checklist' : 'ngân sách'} sang Google Sheet`} title={`Ghi đè tab ${task ? 'CHECKLIST' : 'PHÂN BỔ NGÂN SÁCH'} bằng dữ liệu hiện tại`}><CloudUpload size={17} /><span className="pw-sheet-sync-full">Đồng bộ Sheet</span><span className="pw-sheet-sync-short">Sheet</span></button>{layout === 'table' && <button className="pw-capture-table" type="button" disabled={exportingImage} onClick={exportTableImage} aria-label={exportingImage ? 'Đang tạo ảnh bảng' : 'Chụp bảng thành ảnh'} title="Lưu toàn bộ bảng thành ảnh"><ImageDown size={17} /><span>{exportingImage ? 'Đang tạo…' : 'Chụp bảng'}</span></button>}<button className="pw-reload" onClick={syncNow} disabled={busy || syncing} aria-busy={syncing} aria-label={syncing ? "Đang đồng bộ dữ liệu" : "Tải lại dữ liệu"} title={syncing ? "Đang đồng bộ…" : "Tải lại dữ liệu"}><RefreshCw size={17} className={syncing ? "animate-spin" : undefined} /></button></div></div>
     {error && <div role="alert" className="pw-error">Không tải được dữ liệu: {error.message} <button onClick={syncNow} disabled={syncing}>Thử lại</button></div>}
     {sheetSyncResult && <div className="pw-sheet-sync-result"><ShieldCheck size={16} /><span>Google Sheet đã cập nhật {sheetSyncResult.rows} dòng lúc {sheetSyncResult.syncedAt ? new Date(sheetSyncResult.syncedAt).toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' }) : 'vừa xong'}.</span></div>}
-    {loading ? <div className="pw-loading"><Loader2 className="animate-spin" size={21} />Đang đồng bộ…</div> : layout === 'table' ? (task ? <TaskGroupTable groups={groups} matches={matches} onOpen={openRecord} onAdd={openNew} filtered={Boolean(search || state !== 'all' || scope !== 'all')} /> : <BudgetGroupTable groups={groups} matches={matches} byItem={byItem} members={members.rows} onOpen={openRecord} onAdd={openNew} filtered={Boolean(search || state !== 'all')} />) : <div className="pw-groups">{groups.map((g) => {
+    {loading ? <div className="pw-loading"><Loader2 className="animate-spin" size={21} />Đang đồng bộ…</div> : layout === 'table' ? (task ? <TaskGroupTable captureRef={tableCaptureRef} groups={groups} matches={matches} onOpen={openRecord} onAdd={openNew} filtered={Boolean(search || state !== 'all' || scope !== 'all')} /> : <BudgetGroupTable captureRef={tableCaptureRef} groups={groups} matches={matches} byItem={byItem} members={members.rows} onOpen={openRecord} onAdd={openNew} filtered={Boolean(search || state !== 'all')} />) : <div className="pw-groups">{groups.map((g) => {
       const rows = g.records.filter(matches)
       if (!rows.length && (search || state !== 'all' || scope !== 'all')) return null
       const open = expanded[g.id] ?? Boolean(search || state !== 'all' || scope !== 'all')
@@ -374,7 +420,7 @@ function BudgetQuickTable({ rows, view, budgets, onOpen }) {
     </table>
   </div>
 }
-function TaskGroupTable({ groups, matches, onOpen, onAdd, filtered }) {
+function TaskGroupTable({ captureRef, groups, matches, onOpen, onAdd, filtered }) {
   const visible = groups.map((group) => ({ ...group, records:group.records.filter(matches) })).filter((group) => group.records.length || !filtered)
   const rows = visible.flatMap((group) => group.records)
   const totals = rows.reduce((sum, row) => {
@@ -386,7 +432,7 @@ function TaskGroupTable({ groups, matches, onOpen, onAdd, filtered }) {
     else sum.todo += 1
     return sum
   }, { total:0, todo:0, doing:0, done:0, overdue:0 })
-  return <div className="pw-ledger-shell pw-task-ledger-shell" role="region" aria-label="Bảng checklist theo nhóm" tabIndex={0}>
+  return <LedgerCapture captureRef={captureRef} title="BẢNG CHECKLIST"><div className="pw-ledger-shell pw-task-ledger-shell" role="region" aria-label="Bảng checklist theo nhóm" tabIndex={0}>
     <table className="pw-ledger pw-task-ledger">
       <thead><tr><th>Nhóm</th><th>Công việc</th><th>Phụ trách</th><th>Trạng thái</th><th>Ưu tiên</th><th>Hạn</th><th>Ghi chú</th></tr></thead>
       {visible.map((group) => <tbody key={group.id}>{group.records.length ? group.records.map((row, index) => {
@@ -395,9 +441,9 @@ function TaskGroupTable({ groups, matches, onOpen, onAdd, filtered }) {
       }) : <tr><th className="pw-ledger-group" scope="rowgroup"><strong>{group.name}</strong></th><td colSpan={6}><button className="pw-ledger-empty" onClick={() => onAdd(group.id)}><Plus size={12} />Thêm công việc</button></td></tr>}</tbody>)}
       {rows.length > 0 && <tfoot><tr className="pw-task-ledger-total"><td colSpan={2}><span>Tổng công việc</span><strong>{totals.total}</strong></td><td><span>Cần làm <strong>{totals.todo}</strong></span></td><td><span>Đang làm <strong>{totals.doing}</strong></span></td><td><span>Hoàn thành <strong>{totals.done}</strong></span></td><td colSpan={2}><span>Quá hạn <strong>{totals.overdue}</strong></span></td></tr></tfoot>}
     </table>{!visible.length && <div className="pw-empty">Không có công việc phù hợp.</div>}
-  </div>
+  </div></LedgerCapture>
 }
-function BudgetGroupTable({ groups, matches, byItem, members, onOpen, onAdd, filtered }) {
+function BudgetGroupTable({ captureRef, groups, matches, byItem, members, onOpen, onAdd, filtered }) {
   const visible = groups.map((g) => ({ ...g, records:g.records.filter(matches) })).filter((g) => g.records.length || !filtered)
   const nam = members.find((member) => personKey(member.name) === 'nam') || members.find((member) => personKey(member.name).startsWith('nam'))
   const phuong = members.find((member) => personKey(member.name) === 'phuong') || members.find((member) => personKey(member.name).startsWith('phuong'))
@@ -409,7 +455,7 @@ function BudgetGroupTable({ groups, matches, byItem, members, onOpen, onAdd, fil
   const attributedTotal = totals.nam + totals.phuong
   const namRatio = attributedTotal > 0 ? Math.round(totals.nam / attributedTotal * 100) : 0
   const phuongRatio = attributedTotal > 0 ? 100 - namRatio : 0
-  return <div className="pw-ledger-shell" role="region" aria-label="Bảng ngân sách theo nhóm" tabIndex={0}>
+  return <LedgerCapture captureRef={captureRef} title="BẢNG PHÂN BỔ NGÂN SÁCH"><div className="pw-ledger-shell" role="region" aria-label="Bảng ngân sách theo nhóm" tabIndex={0}>
     <table className="pw-ledger">
       <thead><tr><th>Nhóm chi phí</th><th>Hạng mục</th><th className="numeric">Dự toán</th><th className="numeric">Nam đã chi</th><th className="numeric">Phương đã chi</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead>
       {visible.map((g) => <tbody key={g.id}>{g.records.length ? g.records.map((row,index) => {
@@ -422,6 +468,13 @@ function BudgetGroupTable({ groups, matches, byItem, members, onOpen, onAdd, fil
       }) : <tr><th className="pw-ledger-group" scope="rowgroup"><strong>{g.name}</strong></th><td colSpan={6}><button className="pw-ledger-empty" onClick={() => onAdd(g.id)}><Plus size={12} />Thêm khoản chi</button></td></tr>}</tbody>)}
       {visible.some((group) => group.records.length) && <tfoot><tr className="pw-ledger-grand-total"><td colSpan={2}><span>Tổng đã chi</span><strong>{money(totals.actual)}</strong></td><td className="numeric planned"><TableMoney value={totals.planned} /></td><td className="numeric person nam"><TableMoney value={totals.nam} /></td><td className="numeric person phuong"><TableMoney value={totals.phuong} /></td><td colSpan={2}><SpendingRatioChart nam={namRatio} phuong={phuongRatio} hasData={attributedTotal > 0} /></td></tr></tfoot>}
     </table>{!visible.length && <div className="pw-empty">Không có bản ghi phù hợp.</div>}
+  </div></LedgerCapture>
+}
+function LedgerCapture({ captureRef, title, children }) {
+  return <div className="pw-ledger-capture" ref={captureRef}>
+    <div className="pw-ledger-export-head"><div><strong>{title}</strong><span>Mộc Nướng · Nướng Chill</span></div><time>{new Date().toLocaleDateString('vi-VN')}</time></div>
+    {children}
+    <div className="pw-ledger-export-foot"><span>Dữ liệu từ hệ thống quản lý Mộc Nướng</span><span>Đơn vị: VNĐ</span></div>
   </div>
 }
 function SpendingRatioChart({ nam, phuong, hasData }) {
@@ -444,6 +497,7 @@ function SpendingRatioChart({ nam, phuong, hasData }) {
 function TableMoney({ value }) {
   const full = money(value)
   const short = compact(value)
+  if (short === '0k') return <span className="pw-table-money-zero">—</span>
   if (full === short) return <span className="pw-table-money-full pw-table-money-compact">{full}</span>
   const segments = short.match(/-?[\d.]+(?:tr|k|đ)/g) || [short]
   return <><span className="pw-table-money-full">{full}</span><span className="pw-table-money-compact">{segments.map((segment, index) => <React.Fragment key={`${segment}-${index}`}>{index > 0 && <wbr />}{segment}</React.Fragment>)}</span></>
