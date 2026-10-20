@@ -9,6 +9,7 @@ vi.mock('@/hooks/useCollection', () => ({ useCollection: (table) => mocks.collec
 vi.mock('@/context/AuthContext', () => ({ useAuth: () => ({ profile: { name:'nam' }, user: { email:'nam@quannuong.app' } }) }))
 vi.mock('@/components/ui/toast', () => ({ useToast: () => ({ success:mocks.success, error:mocks.error }) }))
 vi.mock('@/lib/supabase', () => ({ supabase: { rpc: mocks.rpc, storage: { from: () => ({ createSignedUrl: vi.fn().mockResolvedValue({data:{signedUrl:'https://example.com/file.pdf'}}) }) } } }))
+vi.mock('html-to-image', () => ({ toBlob:vi.fn() }))
 beforeAll(() => {
  HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
  HTMLDialogElement.prototype.close = function () { this.removeAttribute('open') }
@@ -190,6 +191,17 @@ describe('Checklist and Budget interactions', () => {
   expect(within(region).queryByRole('button',{name:'Mở Thi công'})).toBeNull()
   fireEvent.click(within(region).getByRole('button',{name:'Mở Bàn ghế'}))
   expect(screen.getByRole('dialog',{name:'Chi tiết khoản chi'})).toBeTruthy()
+ })
+ it('shows dashes for zero-value table money and exposes the image capture action only in table view', () => {
+  mocks.collections.budget_items.rows.push({id:'budget-2',name:'Chưa chi',category_id:'group-1',planned:2000000,status:'pending'})
+  mount('budget')
+  expect(screen.queryByRole('button',{name:'Chụp bảng thành ảnh'})).toBeNull()
+  fireEvent.click(screen.getByRole('button',{name:'Dạng bảng'}))
+  const region=screen.getByRole('region',{name:'Bảng ngân sách theo nhóm'})
+  expect(screen.getByRole('button',{name:'Chụp bảng thành ảnh'})).toBeTruthy()
+  const emptyRow=within(region).getByRole('button',{name:'Mở Chưa chi'}).closest('tr')
+  expect([...emptyRow.querySelectorAll('td.numeric.person')].every((cell) => cell.textContent === '—')).toBe(true)
+  expect(region.textContent).not.toContain('0k')
  })
  it('moves records to the selected group before deleting their old group', async () => {
   mocks.collections.main_categories.rows.push({id:'group-2',name:'Thiết bị',sort:2,created_at:'2026-10-17'})
