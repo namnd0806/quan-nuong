@@ -47,6 +47,9 @@ export default function PlanningWorkspace({ kind }) {
   const [syncing, setSyncing] = useState(false)
   const [sheetSyncing, setSheetSyncing] = useState(false)
   const [exportingImage, setExportingImage] = useState(false)
+  const [savingImage, setSavingImage] = useState(false)
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false)
+  const [imagePreview, setImagePreview] = useState(null)
   const [sheetConfirmOpen, setSheetConfirmOpen] = useState(false)
   const [sheetSyncResult, setSheetSyncResult] = useState(null)
   const syncLock = useRef(false)
@@ -146,14 +149,15 @@ export default function PlanningWorkspace({ kind }) {
   }
   const exportTableImage = async () => {
     if (!tableCaptureRef.current || exportingImage) return
+    if (imagePreview?.url) URL.revokeObjectURL(imagePreview.url)
+    setImagePreview(null)
+    setImagePreviewOpen(true)
     setExportingImage(true)
-    let exportNode
+    const exportNode = tableCaptureRef.current
+    const previousStyle = exportNode.getAttribute('style')
     try {
-      exportNode = tableCaptureRef.current.cloneNode(true)
       exportNode.classList.add('is-exporting')
-      exportNode.setAttribute('aria-hidden', 'true')
-      Object.assign(exportNode.style, { position:'fixed', left:'-12000px', top:'0', width:'1080px', maxWidth:'none', zIndex:'-1' })
-      document.body.appendChild(exportNode)
+      Object.assign(exportNode.style, { position:'fixed', left:'0', top:'0', width:'1080px', maxWidth:'none', zIndex:'0', pointerEvents:'none' })
       await document.fonts?.ready
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
       const height = Math.ceil(exportNode.scrollHeight)
@@ -161,30 +165,51 @@ export default function PlanningWorkspace({ kind }) {
       const blob = await toBlob(exportNode, { cacheBust:true, pixelRatio, backgroundColor:'#071426', width:1080, height })
       if (!blob) throw new Error('Không tạo được tệp ảnh')
       const fileName = `${task ? 'bang-checklist' : 'bang-phan-bo-ngan-sach'}-${localDate()}.png`
-      const file = new File([blob], fileName, { type:'image/png' })
+      const objectUrl = URL.createObjectURL(blob)
+      setImagePreview({ blob, fileName, url:objectUrl })
+    } catch (error) {
+      toast.error(`Không thể chụp bảng: ${error.message}`)
+      setImagePreviewOpen(false)
+    } finally {
+      exportNode.classList.remove('is-exporting')
+      if (previousStyle == null) exportNode.removeAttribute('style')
+      else exportNode.setAttribute('style', previousStyle)
+      setExportingImage(false)
+    }
+  }
+  const closeImagePreview = (force = false) => {
+    if (!force && (exportingImage || savingImage)) return
+    if (imagePreview?.url) URL.revokeObjectURL(imagePreview.url)
+    setImagePreview(null)
+    setImagePreviewOpen(false)
+  }
+  const saveTableImage = async () => {
+    if (!imagePreview || savingImage) return
+    setSavingImage(true)
+    try {
+      const file = new File([imagePreview.blob], imagePreview.fileName, { type:'image/png' })
       if (navigator.share && navigator.canShare?.({ files:[file] })) {
         try {
           await navigator.share({ files:[file], title:task ? 'Bảng checklist' : 'Bảng phân bổ ngân sách' })
-          toast.success('Ảnh bảng đã sẵn sàng để lưu hoặc gửi đi.')
+          toast.success('Đã mở ảnh để bạn lưu hoặc gửi đi.')
+          closeImagePreview(true)
           return
         } catch (shareError) {
           if (shareError.name === 'AbortError') return
         }
       }
-      const objectUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.download = fileName
-      link.href = objectUrl
+      link.download = imagePreview.fileName
+      link.href = imagePreview.url
       document.body.appendChild(link)
       link.click()
       link.remove()
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
-      toast.success('Đã tạo ảnh đầy đủ của bảng.')
+      toast.success('Đã tải ảnh bảng về máy.')
+      closeImagePreview(true)
     } catch (error) {
-      toast.error(`Không thể chụp bảng: ${error.message}`)
+      toast.error(`Không thể lưu ảnh: ${error.message}`)
     } finally {
-      exportNode?.remove()
-      setExportingImage(false)
+      setSavingImage(false)
     }
   }
 
@@ -368,6 +393,13 @@ export default function PlanningWorkspace({ kind }) {
 
     <PlanningPanel open={sheetConfirmOpen} title="Đồng bộ Sheet" variant="sync" busy={sheetSyncing} onClose={() => setSheetConfirmOpen(false)} footer={<><button className="pw-secondary" disabled={sheetSyncing} onClick={() => setSheetConfirmOpen(false)}>Huỷ</button><BusyButton busy={sheetSyncing} onClick={syncSheet}><CloudUpload size={17} />Đồng bộ</BusyButton></>}>
       <div className="pw-sheet-alert"><span className="pw-sheet-alert-icon"><CloudUpload size={22} /></span><p>Ghi dữ liệu {task ? 'công việc' : 'ngân sách'} hiện tại sang tab <strong>{task ? 'CHECKLIST' : 'PHÂN BỔ NGÂN SÁCH'}</strong>.</p></div>
+    </PlanningPanel>
+
+    <PlanningPanel open={imagePreviewOpen} title="Xem trước ảnh bảng" variant="image-preview" wide busy={exportingImage || savingImage} onClose={() => closeImagePreview()} footer={<><button className="pw-secondary" type="button" disabled={exportingImage || savingImage} onClick={() => closeImagePreview()}>Đóng</button><button className="pw-primary" type="button" disabled={!imagePreview || exportingImage || savingImage} onClick={saveTableImage}>{savingImage ? <Loader2 className="animate-spin" size={17} /> : <ImageDown size={17} />}{savingImage ? 'Đang lưu…' : 'Lưu ảnh'}</button></>}>
+      <div className="pw-image-preview">
+        {exportingImage && <div className="pw-image-preview-loading"><Loader2 className="animate-spin" size={28} /><strong>Đang dựng ảnh đầy đủ…</strong><span>Vui lòng chờ trong giây lát.</span></div>}
+        {!exportingImage && imagePreview && <><img src={imagePreview.url} alt={`Xem trước ${task ? 'bảng checklist' : 'bảng phân bổ ngân sách'}`} /><p>Kiểm tra nội dung trong ảnh, sau đó bấm <strong>Lưu ảnh</strong>.</p></>}
+      </div>
     </PlanningPanel>
 
     <PlanningPanel open={Boolean(draft)} title={task ? (draft?.updated_at ? 'Chi tiết công việc' : 'Thêm công việc') : (draft?.updated_at ? 'Sửa khoản ngân sách' : 'Thêm khoản ngân sách')} busy={disabled} onClose={() => setDraft(null)} wide footer={<><button className="pw-secondary" disabled={disabled} onClick={() => setDraft(null)}>Đóng</button><BusyButton busy={disabled} type="submit" form="planning-record-form">Lưu thay đổi</BusyButton></>}>
