@@ -1,20 +1,22 @@
 const SPREADSHEET_ID = '1QrzhgSbYyD6X5bm9XyVCE2OEBEpqqSCqWcIh5maRhqI';
-const DEFAULT_SHEET = 'PHÂN BỔ NGÂN SÁCH';
-const SOURCE = 'quan-nuong-budget-v1';
+const BUDGET_SOURCE = 'quan-nuong-budget-v1';
+const CHECKLIST_SOURCE = 'quan-nuong-checklist-v1';
 
 function doPost(e) {
   try {
     const payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    if (payload.source !== SOURCE || !Array.isArray(payload.rows)) {
+    if (![BUDGET_SOURCE, CHECKLIST_SOURCE].includes(payload.source) || !Array.isArray(payload.rows)) {
       return json_({ ok: false, error: 'Yêu cầu không hợp lệ.' });
     }
 
     const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = spreadsheet.getSheetByName(payload.sheetName || DEFAULT_SHEET);
-    if (!sheet) return json_({ ok: false, error: 'Không tìm thấy tab ngân sách.' });
+    const defaultSheet = payload.source === CHECKLIST_SOURCE ? 'CHECKLIST' : 'PHÂN BỔ NGÂN SÁCH';
+    const sheet = spreadsheet.getSheetByName(payload.sheetName || defaultSheet);
+    if (!sheet) return json_({ ok: false, error: 'Không tìm thấy tab ' + defaultSheet + '.' });
+    const render = payload.source === CHECKLIST_SOURCE ? renderChecklist_ : renderBudget_;
 
     try {
-      renderBudget_(sheet, payload.rows);
+      render(sheet, payload.rows);
     } catch (error) {
       // Older versions of this workbook used a native Google Sheets table.
       // That table can block deleting multiple columns. Recreate the tab once,
@@ -22,8 +24,8 @@ function doPost(e) {
       if (!String(error).includes('single column')) throw error;
       const originalName = sheet.getName();
       const originalIndex = sheet.getIndex();
-      const replacement = spreadsheet.insertSheet('__BUDGET_SYNC_' + Date.now(), originalIndex);
-      renderBudget_(replacement, payload.rows);
+      const replacement = spreadsheet.insertSheet('__SHEET_SYNC_' + Date.now(), originalIndex);
+      render(replacement, payload.rows);
       spreadsheet.deleteSheet(sheet);
       replacement.setName(originalName);
     }
@@ -33,7 +35,7 @@ function doPost(e) {
   }
 }
 
-function renderBudget_(sheet, rows) {
+function renderChecklist_(sheet, rows) {
   const columnCount = 7;
   sheet.getDataRange().breakApart();
   sheet.clear();
@@ -44,7 +46,85 @@ function renderBudget_(sheet, rows) {
   if (sheet.getMaxRows() < requiredRows) sheet.insertRowsAfter(sheet.getMaxRows(), requiredRows - sheet.getMaxRows());
   if (sheet.getMaxRows() > requiredRows) sheet.deleteRows(requiredRows + 1, sheet.getMaxRows() - requiredRows);
 
-  sheet.getRange('A1:G1').merge().setValue('PHÂN BỔ NGÂN SÁCH QUÁN NƯỚNG');
+  sheet.getRange('A1:G1').merge().setValue('CHECKLIST');
+  sheet.getRange('A2:G2').merge().setValue('Dữ liệu từ ứng dụng · Cập nhật ' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm'));
+  sheet.getRange('A4:G4').setValues([['Nhóm', 'Công việc', 'Người phụ trách', 'Trạng thái', 'Ưu tiên', 'Hạn hoàn thành', 'Ghi chú']]);
+
+  if (rows.length) {
+    const values = rows.map(row => [row.category, row.title, row.assignee || 'Chưa giao', row.status, row.priority, row.deadline || '', row.note || '']);
+    sheet.getRange(5, 1, values.length, columnCount).setValues(values);
+    sheet.getRange(5, 1, values.length, columnCount).setVerticalAlignment('middle').setWrap(true);
+    sheet.getRange(5, 1, values.length, columnCount).setBorder(true, true, true, true, true, true, '#d6dfeb', SpreadsheetApp.BorderStyle.SOLID);
+    sheet.getRange(5, 6, values.length, 1).setNumberFormat('dd/MM/yyyy').setHorizontalAlignment('center');
+    mergeGroups_(sheet, rows, 5);
+    styleTaskStatuses_(sheet, rows, 5);
+    renderTaskTotals_(sheet, rows, 5 + rows.length);
+  }
+
+  sheet.getRange('A1:G1').setBackground('#172a46').setFontColor('#ffffff').setFontSize(17).setFontWeight('bold').setHorizontalAlignment('center');
+  sheet.getRange('A2:G2').setBackground('#eaf2ff').setFontColor('#52657c').setFontSize(9).setHorizontalAlignment('center');
+  sheet.getRange('A4:G4').setBackground('#244e7c').setFontColor('#ffffff').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sheet.setFrozenRows(4);
+  sheet.setRowHeight(1, 38);
+  sheet.setRowHeight(2, 25);
+  sheet.setRowHeight(4, 34);
+  sheet.setColumnWidth(1, 160);
+  sheet.setColumnWidth(2, 270);
+  sheet.setColumnWidth(3, 130);
+  sheet.setColumnWidth(4, 125);
+  sheet.setColumnWidth(5, 110);
+  sheet.setColumnWidth(6, 135);
+  sheet.setColumnWidth(7, 290);
+  sheet.getRange(1, 1, requiredRows, columnCount).setFontFamily('Arial');
+}
+
+function styleTaskStatuses_(sheet, rows, startRow) {
+  rows.forEach((row, index) => {
+    const status = sheet.getRange(startRow + index, 4);
+    const priority = sheet.getRange(startRow + index, 5);
+    if (row.status === 'Hoàn thành') status.setBackground('#dff5e8').setFontColor('#18794e');
+    else if (row.status === 'Đang làm') status.setBackground('#e1efff').setFontColor('#2463a5');
+    else if (row.status === 'Quá hạn') status.setBackground('#ffe4e7').setFontColor('#b42336');
+    else status.setBackground('#edf1f6').setFontColor('#607086');
+    if (row.priority === 'Khẩn cấp') priority.setFontColor('#b42336');
+    else if (row.priority === 'Cao') priority.setFontColor('#a86108');
+    else priority.setFontColor('#52657c');
+    status.setFontWeight('bold').setHorizontalAlignment('center');
+    priority.setFontWeight('bold').setHorizontalAlignment('center');
+  });
+}
+
+function renderTaskTotals_(sheet, rows, rowNumber) {
+  const totals = rows.reduce((sum, row) => {
+    sum.total++;
+    if (row.status === 'Hoàn thành') sum.done++;
+    else if (row.status === 'Đang làm') sum.doing++;
+    else if (row.status === 'Quá hạn') sum.overdue++;
+    else sum.todo++;
+    return sum;
+  }, { total: 0, todo: 0, doing: 0, done: 0, overdue: 0 });
+  const range = sheet.getRange(rowNumber, 1, 1, 7);
+  range.setValues([['TỔNG CÔNG VIỆC', totals.total, 'Cần làm ' + totals.todo, 'Đang làm ' + totals.doing, 'Hoàn thành ' + totals.done, 'Quá hạn ' + totals.overdue, '']]);
+  range.setBackground('#173550').setFontColor('#dcecff').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  range.setBorder(true, true, true, true, true, true, '#4c82b5', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+  sheet.getRange(rowNumber, 1).setFontColor('#9fd0ff');
+  sheet.getRange(rowNumber, 5).setFontColor('#70dba6');
+  sheet.getRange(rowNumber, 6).setFontColor('#ff9aa6');
+  sheet.setRowHeight(rowNumber, 34);
+}
+
+function renderBudget_(sheet, rows) {
+  const columnCount = 7;
+  sheet.getDataRange().breakApart();
+  sheet.clear();
+  if (sheet.getMaxColumns() < columnCount) sheet.insertColumnsAfter(sheet.getMaxColumns(), columnCount - sheet.getMaxColumns());
+  if (sheet.getMaxColumns() > columnCount) sheet.deleteColumns(columnCount + 1, sheet.getMaxColumns() - columnCount);
+
+  const requiredRows = Math.max(30, rows.length + 10);
+  if (sheet.getMaxRows() < requiredRows) sheet.insertRowsAfter(sheet.getMaxRows(), requiredRows - sheet.getMaxRows());
+  if (sheet.getMaxRows() > requiredRows) sheet.deleteRows(requiredRows + 1, sheet.getMaxRows() - requiredRows);
+
+  sheet.getRange('A1:G1').merge().setValue('PHÂN BỔ NGÂN SÁCH');
   sheet.getRange('A2:G2').merge().setValue('Dữ liệu từ ứng dụng · Cập nhật ' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm'));
   sheet.getRange('A4:G4').setValues([['Nhóm chi phí', 'Hạng mục', 'Dự toán', 'Nam đã chi', 'Phương đã chi', 'Trạng thái', 'Ghi chú']]);
 
@@ -56,6 +136,7 @@ function renderBudget_(sheet, rows) {
     sheet.getRange(5, 1, values.length, columnCount).setBorder(true, true, true, true, true, true, '#d6dfeb', SpreadsheetApp.BorderStyle.SOLID);
     mergeGroups_(sheet, rows, 5);
     styleStatuses_(sheet, rows, 5);
+    renderTotals_(sheet, rows, 6 + rows.length);
   }
 
   sheet.getRange('A1:G1').setBackground('#172a46').setFontColor('#ffffff').setFontSize(17).setFontWeight('bold').setHorizontalAlignment('center');
@@ -74,6 +155,36 @@ function renderBudget_(sheet, rows) {
   sheet.setColumnWidth(7, 280);
   sheet.getRange(1, 1, requiredRows, columnCount).setFontFamily('Arial');
   sheet.getRange(5, 3, Math.max(rows.length, 1), 3).setHorizontalAlignment('right');
+}
+
+function renderTotals_(sheet, rows, rowNumber) {
+  const totals = rows.reduce((sum, row) => ({
+    planned: sum.planned + Number(row.planned || 0),
+    actual: sum.actual + Number(row.totalSpent || 0),
+    nam: sum.nam + Number(row.namSpent || 0),
+    phuong: sum.phuong + Number(row.phuongSpent || 0),
+  }), { planned: 0, actual: 0, nam: 0, phuong: 0 });
+  const summaries = [
+    { label: 'TỔNG ĐÃ CHI', value: totals.actual, background: '#15382e', color: '#93efc3', border: '#3a9b76' },
+    { label: 'DỰ TOÁN', value: totals.planned, background: '#192b40', color: '#91a3b8', border: '#45617f' },
+    { label: 'NAM ĐÃ CHI', value: totals.nam, background: '#292446', color: '#c3b5ff', border: '#6a5ca3' },
+    { label: 'PHƯƠNG ĐÃ CHI', value: totals.phuong, background: '#15343c', color: '#77dbea', border: '#397b8b' },
+  ];
+
+  sheet.setRowHeight(rowNumber - 1, 16);
+  summaries.forEach((summary, index) => {
+    const currentRow = rowNumber + index;
+    const rowRange = sheet.getRange(currentRow, 1, 1, 7);
+    const labelRange = sheet.getRange(currentRow, 1, 1, 3).merge();
+    const valueRange = sheet.getRange(currentRow, 4, 1, 4).merge();
+    labelRange.setValue(summary.label);
+    valueRange.setValue(summary.value);
+    rowRange.setBackground(summary.background).setVerticalAlignment('middle');
+    rowRange.setBorder(true, true, true, true, false, false, summary.border, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    labelRange.setFontColor(summary.color).setFontWeight('bold').setFontSize(10).setHorizontalAlignment('left');
+    valueRange.setFontColor(summary.color).setFontWeight('bold').setFontSize(12).setNumberFormat('#,##0"đ"').setHorizontalAlignment('right');
+    sheet.setRowHeight(currentRow, 36);
+  });
 }
 
 function mergeGroups_(sheet, rows, startRow) {

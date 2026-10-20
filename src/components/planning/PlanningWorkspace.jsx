@@ -498,9 +498,20 @@ function BudgetGroupTable({ captureRef, groups, matches, byItem, members, onOpen
         const status=budgetPaymentState(row,actual)
         return <tr key={row.id}>{index === 0 && <th className="pw-ledger-group" scope="rowgroup" rowSpan={g.records.length}><strong>{g.name}</strong></th>}<td><button className="pw-ledger-open" onClick={() => onOpen(row)} aria-label={`Mở ${row.name}`}>{row.name}</button></td><td className="numeric planned"><TableMoney value={row.planned} /></td><td className="numeric person nam"><TableMoney value={namSpent} /></td><td className="numeric person phuong"><TableMoney value={phuongSpent} /></td><td><span className={`pw-ledger-status ${status}`}>{status === 'partial' ? 'Một phần' : status === 'paid' ? 'Đã trả' : 'Chưa chi'}</span></td><td className="pw-ledger-note"><LedgerNote value={row.note} /></td></tr>
       }) : <tr><th className="pw-ledger-group" scope="rowgroup"><strong>{g.name}</strong></th><td colSpan={6}><button className="pw-ledger-empty" onClick={() => onAdd(g.id)}><Plus size={12} />Thêm khoản chi</button></td></tr>}</tbody>)}
-      {visible.some((group) => group.records.length) && <tfoot><tr className="pw-ledger-grand-total"><td colSpan={2}><span>Tổng đã chi</span><strong>{money(totals.actual)}</strong></td><td className="numeric planned"><TableMoney value={totals.planned} /></td><td className="numeric person nam"><TableMoney value={totals.nam} /></td><td className="numeric person phuong"><TableMoney value={totals.phuong} /></td><td colSpan={2}><SpendingRatioChart nam={namRatio} phuong={phuongRatio} hasData={attributedTotal > 0} /></td></tr></tfoot>}
     </table>{!visible.length && <div className="pw-empty">Không có bản ghi phù hợp.</div>}
-  </div></LedgerCapture>
+  </div>{visible.some((group) => group.records.length) && <BudgetLedgerSummary totals={totals} namRatio={namRatio} phuongRatio={phuongRatio} hasData={attributedTotal > 0} />}</LedgerCapture>
+}
+function BudgetLedgerSummary({ totals, namRatio, phuongRatio, hasData }) {
+  const metrics = [
+    { label:'Tổng đã chi', value:totals.actual, tone:'actual' },
+    { label:'Dự toán', value:totals.planned, tone:'planned' },
+    { label:'Nam đã chi', value:totals.nam, tone:'nam' },
+    { label:'Phương đã chi', value:totals.phuong, tone:'phuong' },
+  ]
+  return <section className="pw-budget-summary" aria-label="Tổng hợp ngân sách">
+    <div className="pw-budget-summary-metrics">{metrics.map((metric) => <div className={`pw-budget-summary-card ${metric.tone}`} key={metric.label}><span>{metric.label}</span><strong>{money(metric.value)}</strong></div>)}</div>
+    <div className="pw-budget-summary-chart"><span>Tỷ lệ đã chi</span><SpendingRatioChart nam={namRatio} phuong={phuongRatio} hasData={hasData} /></div>
+  </section>
 }
 function LedgerCapture({ captureRef, title, children }) {
   return <div className="pw-ledger-capture" ref={captureRef}>
