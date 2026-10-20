@@ -420,8 +420,25 @@ function BudgetGroupTable({ groups, matches, byItem, members, onOpen, onAdd, fil
         const status=budgetPaymentState(row,actual)
         return <tr key={row.id}>{index === 0 && <th className="pw-ledger-group" scope="rowgroup" rowSpan={g.records.length}><strong>{g.name}</strong></th>}<td><button className="pw-ledger-open" onClick={() => onOpen(row)} aria-label={`Mở ${row.name}`}>{row.name}</button></td><td className="numeric planned"><TableMoney value={row.planned} /></td><td className="numeric person nam"><TableMoney value={namSpent} /></td><td className="numeric person phuong"><TableMoney value={phuongSpent} /></td><td><span className={`pw-ledger-status ${status}`}>{status === 'partial' ? 'Một phần' : status === 'paid' ? 'Đã trả' : 'Chưa chi'}</span></td><td className="pw-ledger-note"><LedgerNote value={row.note} /></td></tr>
       }) : <tr><th className="pw-ledger-group" scope="rowgroup"><strong>{g.name}</strong></th><td colSpan={6}><button className="pw-ledger-empty" onClick={() => onAdd(g.id)}><Plus size={12} />Thêm khoản chi</button></td></tr>}</tbody>)}
-      {visible.some((group) => group.records.length) && <tfoot><tr className="pw-ledger-grand-total"><td colSpan={2}><span>Tổng đã chi</span><strong>{money(totals.actual)}</strong></td><td className="numeric planned"><TableMoney value={totals.planned} /></td><td className="numeric person nam"><TableMoney value={totals.nam} /></td><td className="numeric person phuong"><TableMoney value={totals.phuong} /></td><td colSpan={2}><span className="pw-spending-ratio nam">Nam <strong>{namRatio}%</strong></span><span className="pw-spending-ratio phuong">Phương <strong>{phuongRatio}%</strong></span></td></tr></tfoot>}
+      {visible.some((group) => group.records.length) && <tfoot><tr className="pw-ledger-grand-total"><td colSpan={2}><span>Tổng đã chi</span><strong>{money(totals.actual)}</strong></td><td className="numeric planned"><TableMoney value={totals.planned} /></td><td className="numeric person nam"><TableMoney value={totals.nam} /></td><td className="numeric person phuong"><TableMoney value={totals.phuong} /></td><td colSpan={2}><SpendingRatioChart nam={namRatio} phuong={phuongRatio} hasData={attributedTotal > 0} /></td></tr></tfoot>}
     </table>{!visible.length && <div className="pw-empty">Không có bản ghi phù hợp.</div>}
+  </div>
+}
+function SpendingRatioChart({ nam, phuong, hasData }) {
+  const label = hasData ? `Tỷ lệ chi: Nam ${nam}%, Phương ${phuong}%` : 'Chưa có dữ liệu tỷ lệ chi'
+  return <div className={`pw-ratio-chart ${hasData ? '' : 'empty'}`} role="img" aria-label={label}>
+    <span className="pw-ratio-ring" aria-hidden="true">
+      <svg viewBox="0 0 42 42">
+        <circle className="pw-ratio-track" cx="21" cy="21" r="15.5" pathLength="100" />
+        {hasData && <circle className="pw-ratio-phuong" cx="21" cy="21" r="15.5" pathLength="100" />}
+        {hasData && nam > 0 && <circle className="pw-ratio-nam" cx="21" cy="21" r="15.5" pathLength="100" strokeDasharray={`${nam} ${100 - nam}`} />}
+      </svg>
+      <span>{hasData ? 'CHI' : '—'}</span>
+    </span>
+    <span className="pw-ratio-legend" aria-hidden="true">
+      <span className="pw-ratio-item nam"><i />Nam <strong>{nam}%</strong></span>
+      <span className="pw-ratio-item phuong"><i />Phương <strong>{phuong}%</strong></span>
+    </span>
   </div>
 }
 function TableMoney({ value }) {
