@@ -280,3 +280,11 @@
 .pw-ledger-note-text{display:block!important;max-width:100%;overflow:hidden!important;text-overflow:ellipsis;white-space:nowrap!important;color:#9fb2c8;font-size:8px!important;line-height:1.25!important;cursor:zoom-in;outline:0}
 .pw-ledger-note-text:hover,.pw-ledger-note-text:focus-visible{position:absolute;z-index:20;right:4px;top:50%;width:min(300px,72vw);max-height:180px;padding:9px 10px;overflow:auto!important;white-space:normal!important;overflow-wrap:anywhere;transform:translateY(-50%);border:1px solid #55779d;border-radius:9px;background:#0a1829;color:#e3edf9;font-size:11px!important;line-height:1.5!important;box-shadow:0 12px 32px #000b;cursor:zoom-out}
 @media(max-width:767px){.pw-ledger-note-text{font-size:6.5px!important}.pw-ledger-note-text:hover,.pw-ledger-note-text:focus-visible{right:2px;width:min(250px,78vw);max-height:150px;font-size:10px!important}}
+
+/* Money columns stay exact without pushing into neighbouring cells on phones. */
+@media(max-width:767px){
+ .pw-ledger td.numeric{padding-left:1px!important;padding-right:1px!important;white-space:normal!important;overflow:hidden;line-height:1.12}
+ .pw-ledger td.numeric .pw-table-money-compact{display:inline-block;max-width:100%;font-size:clamp(6.5px,1.85vw,8px);line-height:1.12;letter-spacing:-.3px;text-align:center;overflow-wrap:normal;word-break:normal}
+ .pw-ledger-grand-total td.numeric{padding:7px 1px!important}
+ .pw-ledger-grand-total td.numeric .pw-table-money-compact{font-size:clamp(6px,1.75vw,7.5px)}
+}
