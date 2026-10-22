@@ -2,6 +2,13 @@ const SPREADSHEET_ID = '1QrzhgSbYyD6X5bm9XyVCE2OEBEpqqSCqWcIh5maRhqI';
 const BUDGET_SOURCE = 'quan-nuong-budget-v1';
 const CHECKLIST_SOURCE = 'quan-nuong-checklist-v1';
 
+// Google ContentService can finish a POST by redirecting the HTTP client to a
+// GET request.  Supabase follows that redirect, so keep a JSON health response
+// here instead of letting Apps Script return its default HTML error page.
+function doGet() {
+  return json_({ ok: true, endpoint: 'quan-nuong-sheet-sync', updatedAt: new Date().toISOString() });
+}
+
 function doPost(e) {
   try {
     const payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
