@@ -166,18 +166,18 @@ function renderBudget_(sheet, rows) {
 
 function renderTotals_(sheet, rows, rowNumber) {
   const summaries = [
-    { label: 'TỔNG ĐÃ CHI', formula: '=SUM(D5:D)+SUM(E5:E)', background: '#15382e', color: '#93efc3', border: '#3a9b76' },
-    { label: 'DỰ TOÁN', formula: '=SUM(C5:C)', background: '#192b40', color: '#91a3b8', border: '#45617f' },
-    { label: 'NAM ĐÃ CHI', formula: '=SUM(D5:D)', background: '#292446', color: '#c3b5ff', border: '#6a5ca3' },
-    { label: 'PHƯƠNG ĐÃ CHI', formula: '=SUM(E5:E)', background: '#15343c', color: '#77dbea', border: '#397b8b' },
+    { label: 'TỔNG ĐÃ CHI', formula: '=SUM(D5:D)+SUM(E5:E)', background: '#dff5e8', color: '#18794e', border: '#77bd9b' },
+    { label: 'DỰ TOÁN', formula: '=SUM(C5:C)', background: '#edf1f6', color: '#607086', border: '#afbdcc' },
+    { label: 'NAM ĐÃ CHI', formula: '=SUM(D5:D)', background: '#f0ecff', color: '#6b58b8', border: '#b8abe5' },
+    { label: 'PHƯƠNG ĐÃ CHI', formula: '=SUM(E5:E)', background: '#e2f5f7', color: '#197c88', border: '#83c4cc' },
   ];
 
   sheet.setRowHeight(rowNumber - 1, 12);
   summaries.forEach((summary, index) => {
     const currentRow = rowNumber + index;
-    const compactRange = sheet.getRange(currentRow, 1, 1, 2);
-    const labelCell = sheet.getRange(currentRow, 1);
-    const valueCell = sheet.getRange(currentRow, 2);
+    const compactRange = sheet.getRange(currentRow, 6, 1, 2);
+    const labelCell = sheet.getRange(currentRow, 6);
+    const valueCell = sheet.getRange(currentRow, 7);
     labelCell.setValue(summary.label);
     valueCell.setFormula(summary.formula);
     compactRange.setBackground(summary.background).setVerticalAlignment('middle');
