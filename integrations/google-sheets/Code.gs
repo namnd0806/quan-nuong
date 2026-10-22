@@ -165,32 +165,26 @@ function renderBudget_(sheet, rows) {
 }
 
 function renderTotals_(sheet, rows, rowNumber) {
-  const totals = rows.reduce((sum, row) => ({
-    planned: sum.planned + Number(row.planned || 0),
-    actual: sum.actual + Number(row.totalSpent || 0),
-    nam: sum.nam + Number(row.namSpent || 0),
-    phuong: sum.phuong + Number(row.phuongSpent || 0),
-  }), { planned: 0, actual: 0, nam: 0, phuong: 0 });
   const summaries = [
-    { label: 'TỔNG ĐÃ CHI', value: totals.actual, background: '#15382e', color: '#93efc3', border: '#3a9b76' },
-    { label: 'DỰ TOÁN', value: totals.planned, background: '#192b40', color: '#91a3b8', border: '#45617f' },
-    { label: 'NAM ĐÃ CHI', value: totals.nam, background: '#292446', color: '#c3b5ff', border: '#6a5ca3' },
-    { label: 'PHƯƠNG ĐÃ CHI', value: totals.phuong, background: '#15343c', color: '#77dbea', border: '#397b8b' },
+    { label: 'TỔNG ĐÃ CHI', formula: '=SUM(D5:D)+SUM(E5:E)', background: '#15382e', color: '#93efc3', border: '#3a9b76' },
+    { label: 'DỰ TOÁN', formula: '=SUM(C5:C)', background: '#192b40', color: '#91a3b8', border: '#45617f' },
+    { label: 'NAM ĐÃ CHI', formula: '=SUM(D5:D)', background: '#292446', color: '#c3b5ff', border: '#6a5ca3' },
+    { label: 'PHƯƠNG ĐÃ CHI', formula: '=SUM(E5:E)', background: '#15343c', color: '#77dbea', border: '#397b8b' },
   ];
 
-  sheet.setRowHeight(rowNumber - 1, 16);
+  sheet.setRowHeight(rowNumber - 1, 12);
   summaries.forEach((summary, index) => {
     const currentRow = rowNumber + index;
-    const rowRange = sheet.getRange(currentRow, 1, 1, 7);
-    const labelRange = sheet.getRange(currentRow, 1, 1, 3).merge();
-    const valueRange = sheet.getRange(currentRow, 4, 1, 4).merge();
-    labelRange.setValue(summary.label);
-    valueRange.setValue(summary.value);
-    rowRange.setBackground(summary.background).setVerticalAlignment('middle');
-    rowRange.setBorder(true, true, true, true, false, false, summary.border, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    labelRange.setFontColor(summary.color).setFontWeight('bold').setFontSize(10).setHorizontalAlignment('left');
-    valueRange.setFontColor(summary.color).setFontWeight('bold').setFontSize(12).setNumberFormat('#,##0"đ"').setHorizontalAlignment('right');
-    sheet.setRowHeight(currentRow, 36);
+    const compactRange = sheet.getRange(currentRow, 1, 1, 2);
+    const labelCell = sheet.getRange(currentRow, 1);
+    const valueCell = sheet.getRange(currentRow, 2);
+    labelCell.setValue(summary.label);
+    valueCell.setFormula(summary.formula);
+    compactRange.setBackground(summary.background).setVerticalAlignment('middle');
+    compactRange.setBorder(true, true, true, true, true, true, summary.border, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    labelCell.setFontColor(summary.color).setFontWeight('bold').setFontSize(9).setHorizontalAlignment('left');
+    valueCell.setFontColor(summary.color).setFontWeight('bold').setFontSize(11).setNumberFormat('#,##0"đ"').setHorizontalAlignment('right');
+    sheet.setRowHeight(currentRow, 30);
   });
 }
 
