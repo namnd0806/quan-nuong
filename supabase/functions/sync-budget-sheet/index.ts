@@ -84,12 +84,18 @@ Deno.serve(async (req: Request) => {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ source: 'quan-nuong-budget-v1', sheetName: configResult.data.sheet_name, rows }),
-      redirect: 'follow',
+      // Apps Script ContentService answers with a one-time redirect to
+      // script.googleusercontent.com. Following that redirect is unreliable
+      // from the Edge runtime even though doPost has already completed.
+      redirect: 'manual',
     })
-    const text = await response.text()
-    let result: { ok?: boolean; error?: string } = {}
-    try { result = JSON.parse(text) } catch { throw new Error('Google Sheet trả về dữ liệu không hợp lệ.') }
-    if (!response.ok || !result.ok) throw new Error(result.error || 'Google Sheet từ chối cập nhật.')
+    const appsScriptRedirect = response.status >= 300 && response.status < 400
+    if (!appsScriptRedirect) {
+      const text = await response.text()
+      let result: { ok?: boolean; error?: string } = {}
+      try { result = JSON.parse(text) } catch { throw new Error('Google Sheet trả về dữ liệu không hợp lệ.') }
+      if (!response.ok || !result.ok) throw new Error(result.error || 'Google Sheet từ chối cập nhật.')
+    }
 
     return json({ ok: true, rows: rows.length, syncedAt: new Date().toISOString() })
   } catch (error) {
