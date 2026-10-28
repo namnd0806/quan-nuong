@@ -33,7 +33,7 @@ Deno.serve(async (req: Request) => {
       admin.from('sheet_sync_config').select('webhook_url,sheet_name').eq('id', true).maybeSingle(),
       admin.from('main_categories').select('id,name,sort').order('sort'),
       admin.from('members').select('id,name,sort').order('sort'),
-      admin.from('budget_items').select('id,name,category,category_id,planned,note,created_at'),
+      admin.from('budget_items').select('id,name,category,category_id,planned,agreed_amount,note,created_at'),
       admin.from('budget_transactions').select('item_id,payer_id,amount,voided_at').is('voided_at', null),
     ])
 
@@ -64,13 +64,16 @@ Deno.serve(async (req: Request) => {
       const phuongSpent = itemPayments.filter((payment) => payment.payer_id === phuong.id).reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
       const totalSpent = itemPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
       const planned = Number(item.planned || 0)
-      const status = totalSpent <= 0 ? 'Chưa chi' : planned > 0 && totalSpent < planned ? 'Một phần' : 'Đã thanh toán'
+      const agreedAmount = item.agreed_amount === null ? null : Number(item.agreed_amount)
+      const paymentTarget = agreedAmount ?? planned
+      const status = totalSpent <= 0 ? 'Chưa chi' : paymentTarget > 0 && totalSpent < paymentTarget ? 'Một phần' : 'Đã thanh toán'
       const category = categoryIndex.get(item.category_id)
       return {
         category: category?.name || item.category || 'Chưa phân nhóm',
         categoryOrder: category?.index ?? 999,
         name: item.name,
         planned,
+        agreedAmount,
         totalSpent,
         namSpent,
         phuongSpent,
