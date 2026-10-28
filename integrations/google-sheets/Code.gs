@@ -27,7 +27,7 @@ function doPost(e) {
     } catch (error) {
       // Older versions of this workbook used a native Google Sheets table.
       // That table can block deleting multiple columns. Recreate the tab once,
-      // then all later syncs keep the same clean seven-column sheet.
+      // then all later syncs keep the same clean export sheet.
       if (!String(error).includes('single column')) throw error;
       const originalName = sheet.getName();
       const originalIndex = sheet.getIndex();
@@ -60,8 +60,8 @@ function renderChecklist_(sheet, rows) {
   if (rows.length) {
     const values = rows.map(row => [row.category, row.title, row.assignee || 'Chưa giao', row.status, row.priority, row.deadline || '', row.note || '']);
     sheet.getRange(5, 1, values.length, columnCount).setValues(values);
-    sheet.getRange(5, 1, values.length, columnCount).setVerticalAlignment('middle').setWrap(true);
-    sheet.getRange(5, 1, values.length, columnCount).setBorder(true, true, true, true, true, true, '#d6dfeb', SpreadsheetApp.BorderStyle.SOLID);
+    sheet.getRange(5, 1, rows.length, columnCount).setVerticalAlignment('middle').setWrap(true);
+    sheet.getRange(5, 1, rows.length, columnCount).setBorder(true, true, true, true, true, true, '#d6dfeb', SpreadsheetApp.BorderStyle.SOLID);
     sheet.getRange(5, 6, values.length, 1).setNumberFormat('dd/MM/yyyy').setHorizontalAlignment('center');
     mergeGroups_(sheet, rows, 5);
     styleTaskStatuses_(sheet, rows, 5);
@@ -121,7 +121,7 @@ function renderTaskTotals_(sheet, rows, rowNumber) {
 }
 
 function renderBudget_(sheet, rows) {
-  const columnCount = 7;
+  const columnCount = 8;
   sheet.getDataRange().breakApart();
   sheet.clear();
   if (sheet.getMaxColumns() < columnCount) sheet.insertColumnsAfter(sheet.getMaxColumns(), columnCount - sheet.getMaxColumns());
@@ -131,24 +131,34 @@ function renderBudget_(sheet, rows) {
   if (sheet.getMaxRows() < requiredRows) sheet.insertRowsAfter(sheet.getMaxRows(), requiredRows - sheet.getMaxRows());
   if (sheet.getMaxRows() > requiredRows) sheet.deleteRows(requiredRows + 1, sheet.getMaxRows() - requiredRows);
 
-  sheet.getRange('A1:G1').merge().setValue('PHÂN BỔ NGÂN SÁCH');
-  sheet.getRange('A2:G2').merge().setValue('Dữ liệu từ ứng dụng · Cập nhật ' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm'));
-  sheet.getRange('A4:G4').setValues([['Nhóm chi phí', 'Hạng mục', 'Dự toán', 'Nam đã chi', 'Phương đã chi', 'Trạng thái', 'Ghi chú']]);
+  sheet.getRange('A1:H1').merge().setValue('PHÂN BỔ NGÂN SÁCH');
+  sheet.getRange('A2:H2').merge().setValue('Dữ liệu từ ứng dụng · Cập nhật ' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm'));
+  sheet.getRange('A4:H4').setValues([['Nhóm chi phí', 'Hạng mục', 'Dự toán', 'Giá chốt', 'Nam đã chi', 'Phương đã chi', 'Trạng thái', 'Ghi chú']]);
 
   if (rows.length) {
-    const values = rows.map(row => [row.category, row.name, Number(row.planned || 0), Number(row.namSpent || 0), Number(row.phuongSpent || 0), row.status, row.note || '']);
+    const values = rows.map(row => [
+      row.category,
+      row.name,
+      Number(row.planned || 0),
+      row.agreedAmount === null || row.agreedAmount === undefined || row.agreedAmount === '' ? '' : Number(row.agreedAmount),
+      Number(row.namSpent || 0),
+      Number(row.phuongSpent || 0),
+      row.status,
+      row.note || '',
+    ]);
     sheet.getRange(5, 1, values.length, columnCount).setValues(values);
-    sheet.getRange(5, 3, values.length, 3).setNumberFormat('#,##0"đ"');
-    sheet.getRange(5, 1, values.length, columnCount).setVerticalAlignment('middle').setWrap(true);
-    sheet.getRange(5, 1, values.length, columnCount).setBorder(true, true, true, true, true, true, '#d6dfeb', SpreadsheetApp.BorderStyle.SOLID);
+    sheet.getRange(5, 1, rows.length, columnCount).setVerticalAlignment('middle').setWrap(true);
+    sheet.getRange(5, 1, rows.length, columnCount).setBorder(true, true, true, true, true, true, '#d6dfeb', SpreadsheetApp.BorderStyle.SOLID);
     mergeGroups_(sheet, rows, 5);
     styleStatuses_(sheet, rows, 5);
     renderTotals_(sheet, rows, 6 + rows.length);
   }
 
-  sheet.getRange('A1:G1').setBackground('#172a46').setFontColor('#ffffff').setFontSize(17).setFontWeight('bold').setHorizontalAlignment('center');
-  sheet.getRange('A2:G2').setBackground('#eaf2ff').setFontColor('#52657c').setFontSize(9).setHorizontalAlignment('center');
-  sheet.getRange('A4:G4').setBackground('#244e7c').setFontColor('#ffffff').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sheet.getRange(5, 3, requiredRows - 4, 4).setNumberFormat('#,##0"đ"').setHorizontalAlignment('right');
+
+  sheet.getRange('A1:H1').setBackground('#172a46').setFontColor('#ffffff').setFontSize(17).setFontWeight('bold').setHorizontalAlignment('center');
+  sheet.getRange('A2:H2').setBackground('#eaf2ff').setFontColor('#52657c').setFontSize(9).setHorizontalAlignment('center');
+  sheet.getRange('A4:H4').setBackground('#244e7c').setFontColor('#ffffff').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
   sheet.setFrozenRows(4);
   sheet.setRowHeight(1, 38);
   sheet.setRowHeight(2, 25);
@@ -157,27 +167,27 @@ function renderBudget_(sheet, rows) {
   sheet.setColumnWidth(2, 260);
   sheet.setColumnWidth(3, 120);
   sheet.setColumnWidth(4, 120);
-  sheet.setColumnWidth(5, 130);
-  sheet.setColumnWidth(6, 125);
-  sheet.setColumnWidth(7, 280);
+  sheet.setColumnWidth(5, 120);
+  sheet.setColumnWidth(6, 130);
+  sheet.setColumnWidth(7, 125);
+  sheet.setColumnWidth(8, 280);
   sheet.getRange(1, 1, requiredRows, columnCount).setFontFamily('Arial');
-  sheet.getRange(5, 3, Math.max(rows.length, 1), 3).setHorizontalAlignment('right');
 }
 
 function renderTotals_(sheet, rows, rowNumber) {
   const summaries = [
-    { label: 'TỔNG ĐÃ CHI', formula: '=SUM(D5:D)+SUM(E5:E)', background: '#dff5e8', color: '#18794e', border: '#77bd9b' },
+    { label: 'TỔNG ĐÃ CHI', formula: '=SUM(E5:E)+SUM(F5:F)', background: '#dff5e8', color: '#18794e', border: '#77bd9b' },
     { label: 'DỰ TOÁN', formula: '=SUM(C5:C)', background: '#edf1f6', color: '#607086', border: '#afbdcc' },
-    { label: 'NAM ĐÃ CHI', formula: '=SUM(D5:D)', background: '#f0ecff', color: '#6b58b8', border: '#b8abe5' },
-    { label: 'PHƯƠNG ĐÃ CHI', formula: '=SUM(E5:E)', background: '#e2f5f7', color: '#197c88', border: '#83c4cc' },
+    { label: 'NAM ĐÃ CHI', formula: '=SUM(E5:E)', background: '#f0ecff', color: '#6b58b8', border: '#b8abe5' },
+    { label: 'PHƯƠNG ĐÃ CHI', formula: '=SUM(F5:F)', background: '#e2f5f7', color: '#197c88', border: '#83c4cc' },
   ];
 
   sheet.setRowHeight(rowNumber - 1, 12);
   summaries.forEach((summary, index) => {
     const currentRow = rowNumber + index;
-    const compactRange = sheet.getRange(currentRow, 6, 1, 2);
-    const labelCell = sheet.getRange(currentRow, 6);
-    const valueCell = sheet.getRange(currentRow, 7);
+    const compactRange = sheet.getRange(currentRow, 7, 1, 2);
+    const labelCell = sheet.getRange(currentRow, 7);
+    const valueCell = sheet.getRange(currentRow, 8);
     labelCell.setValue(summary.label);
     valueCell.setFormula(summary.formula);
     compactRange.setBackground(summary.background).setVerticalAlignment('middle');
@@ -203,7 +213,7 @@ function mergeGroups_(sheet, rows, startRow) {
 
 function styleStatuses_(sheet, rows, startRow) {
   rows.forEach((row, index) => {
-    const cell = sheet.getRange(startRow + index, 6);
+    const cell = sheet.getRange(startRow + index, 7);
     if (row.status === 'Đã thanh toán') cell.setBackground('#dff5e8').setFontColor('#18794e');
     else if (row.status === 'Một phần') cell.setBackground('#fff1d6').setFontColor('#a86108');
     else cell.setBackground('#edf1f6').setFontColor('#607086');
