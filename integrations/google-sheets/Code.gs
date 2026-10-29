@@ -61,7 +61,7 @@ function renderChecklist_(sheet, rows) {
     const values = rows.map(row => [row.category, row.title, row.assignee || 'Chưa giao', row.status, row.priority, row.deadline || '', row.note || '']);
     sheet.getRange(5, 1, values.length, columnCount).setValues(values);
     sheet.getRange(5, 1, rows.length, columnCount).setVerticalAlignment('middle').setWrap(true);
-    sheet.getRange(5, 1, rows.length, columnCount).setBorder(true, true, true, true, true, true, '#d6dfeb', SpreadsheetApp.BorderStyle.SOLID);
+    sheet.getRange(5, 1, rows.length, columnCount).setBorder(true, true, true, true, true, true, '#aebed0', SpreadsheetApp.BorderStyle.SOLID);
     sheet.getRange(5, 6, values.length, 1).setNumberFormat('dd/MM/yyyy').setHorizontalAlignment('center');
     mergeGroups_(sheet, rows, 5);
     styleTaskStatuses_(sheet, rows, 5);
@@ -149,7 +149,7 @@ function renderBudget_(sheet, rows) {
     ]);
     sheet.getRange(5, 1, values.length, columnCount).setValues(values);
     sheet.getRange(5, 1, rows.length, columnCount).setVerticalAlignment('middle').setWrap(true);
-    sheet.getRange(5, 1, rows.length, columnCount).setBorder(true, true, true, true, true, true, '#d6dfeb', SpreadsheetApp.BorderStyle.SOLID);
+    sheet.getRange(5, 1, rows.length, columnCount).setBorder(true, true, true, true, true, true, '#aebed0', SpreadsheetApp.BorderStyle.SOLID);
     mergeGroups_(sheet, rows, 5);
     styleStatuses_(sheet, rows, 5);
     renderTotals_(sheet, rows, 6 + rows.length);
