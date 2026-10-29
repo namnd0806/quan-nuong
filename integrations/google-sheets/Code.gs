@@ -66,6 +66,7 @@ function renderChecklist_(sheet, rows) {
     mergeGroups_(sheet, rows, 5);
     styleTaskStatuses_(sheet, rows, 5);
     renderTaskTotals_(sheet, rows, 5 + rows.length);
+    sheet.autoResizeRows(5, rows.length);
   }
 
   sheet.getRange('A1:G1').setBackground('#172a46').setFontColor('#ffffff').setFontSize(17).setFontWeight('bold').setHorizontalAlignment('center');
@@ -152,6 +153,7 @@ function renderBudget_(sheet, rows) {
     mergeGroups_(sheet, rows, 5);
     styleStatuses_(sheet, rows, 5);
     renderTotals_(sheet, rows, 6 + rows.length);
+    sheet.autoResizeRows(5, rows.length);
   }
 
   sheet.getRange(5, 3, requiredRows - 4, 4).setNumberFormat('#,##0"đ"').setHorizontalAlignment('right');
